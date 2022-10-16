@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_init_server.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/13 08:49:52 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/09/17 15:03:00 by root             ###   ########.fr       */
+/*   Updated: 2022/10/17 00:07:03 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,9 +20,9 @@
 #include <time.h>
 #include <stdio.h>
 
-static int				sv_sockerr(char *err, int fd)
+static int				sv_sockerr(char *err, int fd, t_env *e)
 {
-	if (e.verb)
+	if (e->verb)
 	{
 		ft_putstr_fd("\e[31mERROR: ", 2);
 		ft_putstr_fd(err, 2);
@@ -43,11 +43,11 @@ static int				sv_findsocket_v4(struct addrinfo *p, t_env *e)
 	len = sizeof(e->v4.csin);
 	fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 	if (fd < 0)
-		return (sv_sockerr("opening stream socket", fd));
+		return (sv_sockerr("opening stream socket", fd, e));
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)))
-		return (sv_sockerr("setsockopt(SO_REUSEADDR) ", fd));
+		return (sv_sockerr("setsockopt(SO_REUSEADDR) ", fd, e));
 	if (bind(fd, p->ai_addr, p->ai_addrlen) == -1)
-		return (sv_sockerr("binding stream socket", fd));
+		return (sv_sockerr("binding stream socket", fd, e));
 	if (getsockname(fd, &e->v4.csin, &len))
 		ft_putstr((e->verb) ? "(Unable to get IPv4 sockname) " : "");
 	if (p->ai_canonname)
@@ -66,13 +66,13 @@ static int				sv_findsocket_v6(struct addrinfo *p, t_env *e)
 	len = sizeof(e->v6.csin);
 	fd = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
 	if (fd < 0)
-		return (sv_sockerr("opening stream socket", fd));
+		return (sv_sockerr("opening stream socket", fd, e));
 	if (setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)))
-		return (sv_sockerr("setsockopt(SO_REUSEADDR) ", fd));
+		return (sv_sockerr("setsockopt(SO_REUSEADDR) ", fd, e));
 	if (setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &on, sizeof(on)))
-		return (sv_sockerr("setsockopt(IPPROTO_IPV6, IPV6_V6ONLY) ", fd));
+		return (sv_sockerr("setsockopt(IPPROTO_IPV6, IPV6_V6ONLY) ", fd, e));
 	if (bind(fd, p->ai_addr, p->ai_addrlen) == -1)
-		return (sv_sockerr("binding stream socket", fd));
+		return (sv_sockerr("binding stream socket", fd, e));
 	if (getsockname(fd, &e->v6.csin, &len))
 		ft_putstr((e->verb) ? " (Unable to get IPv6 sockname) " : "");
 	if (p->ai_canonname)
@@ -118,7 +118,7 @@ void					sv_init_server(t_env *e)
 	ft_putstr((e->verb) ? "IPv4: " : "");
 	if (e->v4.fd >= 0 &&
 		listen(e->v4.fd, (e->v6.fd >= 0) ? MAX_CLIENT / 2 : MAX_CLIENT) == -1)
-		e->v4.fd = sv_sockerr("listen() on IPv4.", e->v4.fd);
+		e->v4.fd = sv_sockerr("listen() on IPv4.", e->v4.fd, e);
 	if (e->verb)
 		(e->v4.fd < 0) ? printf("\e[31mUnavailable\e[0m\n") :
 			printf("\e[32mAvailable\e[0m %s(%s):%s\n",
@@ -126,7 +126,7 @@ void					sv_init_server(t_env *e)
 	ft_putstr((e->verb) ? "IPv6: " : "");
 	if (e->v6.fd >= 0 &&
 		listen(e->v6.fd, (e->v4.fd >= 0) ? MAX_CLIENT / 2 : MAX_CLIENT) == -1)
-		e->v6.fd = sv_sockerr("listen() on IPv6.", e->v6.fd);
+		e->v6.fd = sv_sockerr("listen() on IPv6.", e->v6.fd, e);
 	if (e->verb)
 		(e->v6.fd < 0) ? printf("\e[31mUnavailable\e[0m\n") :
 			printf("\e[32mAvailable\e[0m %s(%s):%s\n",

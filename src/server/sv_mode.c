@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_mode.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/18 05:18:25 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/05 02:47:55 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:15:22 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,7 +48,7 @@ static void			search_channel(char **cmds, t_fd *cl, t_env *e)
 		{
 			if (!cmds[1])
 				return (rpl_cmodeis(ch, cl, e));
-			return (sv_channel_mode(cmds + 1, ch, cl));
+			return (sv_channel_mode(cmds + 1, ch, cl, e));
 		}
 		ch = ch->next;
 	}

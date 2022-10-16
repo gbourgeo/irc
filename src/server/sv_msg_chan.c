@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_msg_chan.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/20 04:05:11 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:30:53 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:18:58 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,11 +70,11 @@ static int		user_got_mod(t_chan *ch, t_fd *cl)
 	return (0);
 }
 
-void			sv_msg_chan(char *chan_name, char **cmds, t_fd *cl)
+void			sv_msg_chan(char *chan_name, char **cmds, t_fd *cl, t_env *e)
 {
 	t_chan		*ch;
 
-	ch = e.chans;
+	ch = e->chans;
 	while (ch)
 	{
 		if (!sv_strcmp(ch->name, chan_name))

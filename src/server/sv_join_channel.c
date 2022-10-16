@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_join_channel.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/17 04:48:15 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/05 02:09:50 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:11:09 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -54,7 +54,7 @@ static t_chan	*sv_new_chan(char *name, t_fd *cl, t_env *e)
 	if (!*new->name)
 		ft_bzero(new->topic, TOPIC_LEN + 1);
 	ft_memset(&new->cmode, 0, sizeof(new->cmode));
-	new->users = sv_add_usertochan(cl, new);
+	new->users = sv_add_usertochan(cl, new, e);
 	if (*new->name == '!')
 		new->users->mode |= CHFL_CREATOR;
 	if (*new->name != '+')
@@ -85,17 +85,17 @@ static int		sv_check_safe_chan(char *name, t_fd *cl, t_env *e)
 	return (1);
 }
 
-static void		sv_check_chan_modes(char *n, t_chan *ch, char ***cmd, t_fd *cl)
+static void		sv_check_chan_modes(char *n, t_chan *ch, char ***cmd, t_fd *cl, t_env *e)
 {
 	if (ch->cmode & CHFL_KEY &&
 		ft_strcmp((**cmd) ? *((*cmd)++) : **cmd, ch->key))
 		return (sv_err(ERR_BADCHANNELKEY, ch->name, NULL, cl));
 	if (ch->cmode & CHFL_LIMIT && ch->nbusers + ch->invisibl >= ch->limit)
 		return (sv_err(ERR_CHANNELISFULL, ch->name, NULL, cl));
-	ch->users = sv_add_usertochan(cl, ch);
-	cl->chans = sv_add_chantouser(ch, cl);
+	ch->users = sv_add_usertochan(cl, ch, e);
+	cl->chans = sv_add_chantouser(ch, cl, e);
 	send_joinmsg_toothers(ch, cl);
-	sv_who(&n, &e, cl);
+	sv_who(&n, e, cl);
 }
 
 void			sv_join_chan(char *name, char ***c, t_fd *cl, t_env *e)
@@ -106,14 +106,14 @@ void			sv_join_chan(char *name, char ***c, t_fd *cl, t_env *e)
 	while (chan)
 	{
 		if (!sv_strcmp(name, chan->name))
-			return (sv_check_chan_modes(name, chan, c, cl));
+			return (sv_check_chan_modes(name, chan, c, cl, e));
 		chan = chan->next;
 	}
 	if (*name == '!' && !sv_check_safe_chan(name, cl, e))
 		return ;
 	if ((e->chans = sv_new_chan(name, cl, e)) == NULL)
 		return ;
-	if ((cl->chans = sv_add_chantouser(e->chans, cl)) == NULL)
+	if ((cl->chans = sv_add_chantouser(e->chans, cl, e)) == NULL)
 		return ;
 	cl->chansnb++;
 	if (*name == '!')

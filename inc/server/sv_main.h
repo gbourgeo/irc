@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_main.h                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 14:49:14 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:43:23 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:23:08 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -199,8 +199,6 @@ typedef struct			s_grp
 	t_fd				*to;
 }						t_grp;
 
-struct s_env			e;
-
 void					get_conf_file(t_env *e);
 int						is_chan_member(t_chan *ch, t_fd *cl);
 int						is_modo(t_chan *chan, t_fd *cl);
@@ -211,12 +209,12 @@ void					rpl_umode(t_grp *g, t_chan *c, t_fd *to, t_fd *cl);
 void					rpl_motd(t_fd *cl, t_env *e);
 void					send_joinmsg_toothers(t_chan *chan, t_fd *cl);
 void					sv_accept(t_env *e, int ip);
-t_listin				*sv_add_chantouser(t_chan *chan, t_fd *cl);
-t_listin				*sv_add_usertochan(t_fd *cl, t_chan *chan);
+t_listin				*sv_add_chantouser(t_chan *chan, t_fd *cl, t_env *e);
+t_listin				*sv_add_usertochan(t_fd *cl, t_chan *chan, t_env *e);
 t_user					*sv_allowed(t_info *inf, t_user *ptr);
 void					sv_away(char **cmds, t_env *e, t_fd *cl);
-void					sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl);
-void					sv_chan_user_mode(t_grp *grp, char ***cmd);
+void					sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl, t_env *e);
+void					sv_chan_user_mode(t_grp *grp, char ***cmd, t_env *e);
 void					sv_check_clients(t_env *e);
 int						sv_check_name_valid(char *name);
 void					sv_cl_read(t_env *e, t_fd *cl);
@@ -240,11 +238,11 @@ void					sv_list(char **cmds, t_env *e, t_fd *cl);
 int						sv_loop(t_env *e);
 void					sv_mode(char **cmds, t_env *e, t_fd *cl);
 void					sv_msg(char **cmds, t_env *e, t_fd *cl);
-void					sv_msg_chan(char *chan_name, char **cmds, t_fd *cl);
-void					sv_new_client(t_info *info);
+void					sv_msg_chan(char *chan_name, char **cmds, t_fd *cl, t_env *e);
+void					sv_new_client(t_info *info, t_env *e);
 void					sv_nick(char **cmds, t_env *e, t_fd *cl);
 void					sv_nick_change(t_fd *cl, t_env *e);
-void					sv_notice(char *str, t_fd *cl);
+void					sv_notice(char *str, t_fd *cl, t_env *e);
 void					sv_oper(char **cmds, t_env *e, t_fd *cl);
 void					sv_pass(char **cmds, t_env *e, t_fd *cl);
 void					sv_quit(char **cmds, t_env *e, t_fd *cl);

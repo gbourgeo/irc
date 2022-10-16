@@ -3,15 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   sv_err.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/07/11 04:01:19 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/07 07:30:15 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:17:01 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 #include <sys/socket.h>
+
+extern t_env	g_server;
 
 static void		do_this(char *reply, char *reply2, char *cmd, t_fd *cl)
 {
@@ -61,7 +63,7 @@ void			sv_err(char *err, char *cmd, char *cmd2, t_fd *cl)
 	if (pos >= 0 && pos <= ERR_LEN)
 	{
 		sv_cl_write(":", cl);
-		sv_cl_write(e.name, cl);
+		sv_cl_write(g_server.name, cl);
 		sv_cl_write(" ", cl);
 		sv_cl_write(err, cl);
 		sv_cl_write(" ", cl);

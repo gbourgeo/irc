@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_chan.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/06/26 18:34:44 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:20:33 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:11:23 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,13 +43,13 @@ void			send_joinmsg_toothers(t_chan *chan, t_fd *cl)
 	}
 }
 
-t_listin		*sv_add_usertochan(t_fd *cl, t_chan *chan)
+t_listin		*sv_add_usertochan(t_fd *cl, t_chan *chan, t_env *e)
 {
 	t_listin	*new;
 
 	(cl->inf->umode & USR_INVISIBL) ? chan->invisibl++ : chan->nbusers++;
 	if ((new = malloc(sizeof(*new))) == NULL)
-		sv_error("ERROR: SERVER: out of memory", &e);
+		sv_error("ERROR: SERVER: out of memory", e);
 	new->prev = NULL;
 	new->is = cl;
 	new->mode = 0;
@@ -59,12 +59,12 @@ t_listin		*sv_add_usertochan(t_fd *cl, t_chan *chan)
 	return (new);
 }
 
-t_listin		*sv_add_chantouser(t_chan *chan, t_fd *cl)
+t_listin		*sv_add_chantouser(t_chan *chan, t_fd *cl, t_env *e)
 {
 	t_listin	*new;
 
 	if ((new = malloc(sizeof(*new))) == NULL)
-		sv_error("ERROR: SERVER: out of memory", &e);
+		sv_error("ERROR: SERVER: out of memory", e);
 	new->prev = NULL;
 	new->is = chan;
 	new->mode = 0;

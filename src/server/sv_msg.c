@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_msg.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/02 18:01:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:30:22 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:19:24 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -67,7 +67,7 @@ void			sv_msg(char **cmds, t_env *e, t_fd *cl)
 	while (targets[i])
 	{
 		if (ISCHAN(*targets[i]))
-			sv_msg_chan(targets[i], cmds + 1, cl);
+			sv_msg_chan(targets[i], cmds + 1, cl, e);
 		else
 			sv_msg_client(targets[i], cmds + 1, cl, e);
 		i++;

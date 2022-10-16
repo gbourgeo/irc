@@ -3,17 +3,17 @@
 /*                                                        :::      ::::::::   */
 /*   sv_check_clients.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/17 04:52:38 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:28:14 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:23:58 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 #include <time.h>
 
-static void			wrong_username(t_fd *cl)
+static void			wrong_username(t_fd *cl, t_env *e)
 {
 	char			*ptr;
 
@@ -21,10 +21,10 @@ static void			wrong_username(t_fd *cl)
 		"username contains only alphanumeric characters.";
 	cl->leaved = 2;
 	cl->reason = "Invalid username";
-	sv_notice(ptr, cl);
+	sv_notice(ptr, cl, e);
 }
 
-static void			error_loggin_in(char *err, t_fd *cl)
+static void			error_loggin_in(char *err, t_fd *cl, t_env *e)
 {
 	char			*ptr;
 
@@ -32,14 +32,14 @@ static void			error_loggin_in(char *err, t_fd *cl)
 	{
 		ptr = "This nickname is registered. You have 30 sec to choose a "\
 			"different nickname or it will be changed automatically.";
-		sv_notice(ptr, cl);
+		sv_notice(ptr, cl, e);
 		time(&cl->inf->must_change_nick);
 	}
 	else
 	{
 		cl->leaved = 1;
 		cl->reason = err;
-		sv_notice("You failed to log to the server. Try again later.", cl);
+		sv_notice("You failed to log to the server. Try again later.", cl, e);
 	}
 }
 
@@ -62,7 +62,7 @@ static void			check_registered(t_fd *cl, t_env *e)
 				break ;
 			}
 			sv_welcome(e, cl);
-			return (error_loggin_in("", cl));
+			return (error_loggin_in("", cl, e));
 		}
 		us = us->next;
 	}
@@ -80,7 +80,7 @@ static void			check_allowed(t_fd *cl, t_env *e)
 		if (!ft_strcmp(us->passwd, cl->inf->pass))
 			return (sv_welcome(e, cl));
 	}
-	error_loggin_in("Not allowed to login", cl);
+	error_loggin_in("Not allowed to login", cl, e);
 }
 
 void				sv_check_clients(t_env *e)
@@ -101,7 +101,7 @@ void				sv_check_clients(t_env *e)
 				*cl->inf->username)
 		{
 			if (!ft_strisalnum(cl->inf->username))
-				wrong_username(cl);
+				wrong_username(cl, e);
 			else
 				check_allowed(cl, e);
 		}

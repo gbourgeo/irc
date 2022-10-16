@@ -3,28 +3,30 @@
 /*                                                        :::      ::::::::   */
 /*   sv_signals.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/11/12 00:27:16 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/09/17 14:35:52 by root             ###   ########.fr       */
+/*   Updated: 2022/10/17 00:02:36 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <signal.h>
 #include "sv_main.h"
 
-static void			sv_server_killed(int sig)
+extern t_env	g_server;
+
+static void		sv_server_killed(int sig)
 {
 	if (sig == SIGTERM)
-		sv_error("Server Killed By SIGTERM", &e);
+		sv_error("Server Killed By SIGTERM", &g_server);
 	if (sig == SIGINT)
-		sv_error("Server Killed By SIGINT", &e);
+		sv_error("Server Killed By SIGINT", &g_server);
 	if (sig == SIGBUS)
-		sv_error("Server Killed By SIGBUS", &e);
-	sv_error("Server Killed By A Signal xD", &e);
+		sv_error("Server Killed By SIGBUS", &g_server);
+	sv_error("Server Killed By A Signal xD", &g_server);
 }
 
-void				sv_signals(void)
+void			sv_signals(void)
 {
 	signal(SIGWINCH, SIG_IGN);
 	signal(SIGPIPE, SIG_IGN);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_error.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/06/16 07:34:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/09/17 14:52:38 by root             ###   ########.fr       */
+/*   Updated: 2022/10/17 00:17:54 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,15 +16,15 @@
 #include <string.h>
 #include <errno.h>
 
-static void		sv_kill_channels(t_chan *chan)
+static void		sv_kill_channels(t_chan *chan, t_env *e)
 {
 	t_listin	*next;
 
 	if (chan == NULL)
 		return ;
 	if (chan->next)
-		sv_kill_channels(chan->next);
-	if (e.verb)
+		sv_kill_channels(chan->next, e);
+	if (e->verb)
 		printf("\n\e[31mCHAN\e[0m %s \e[31mdeleted\e[0m\n", chan->name);
 	ft_bzero(chan->name, CHANNAME_LEN);
 	ft_bzero(chan->topic, TOPIC_LEN);
@@ -38,16 +38,16 @@ static void		sv_kill_channels(t_chan *chan)
 	chan = NULL;
 }
 
-static void		sv_kill_connections(t_fd *client)
+static void		sv_kill_connections(t_fd *client, t_env *e)
 {
 	t_listin	*next;
 
 	if (client == NULL)
 		return ;
 	if (client->next)
-		sv_kill_connections(client->next);
+		sv_kill_connections(client->next, e);
 	close(client->i.fd);
-	if (e.verb)
+	if (e->verb)
 		printf("CLIENT %s:%s killed\n", client->i.addr, client->i.port);
 	if (!client->inf->pass)
 	{
@@ -69,8 +69,8 @@ static void		sv_kill_connections(t_fd *client)
 
 void			sv_error(char *str, t_env *e)
 {
-	sv_kill_connections(e->fds);
-	sv_kill_channels(e->chans);
+	sv_kill_connections(e->fds, e);
+	sv_kill_channels(e->chans, e);
 	FD_ZERO(&e->fd_read);
 	FD_ZERO(&e->fd_write);
 	close(e->v4.fd);

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   sv_channel_mode.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/19 04:20:45 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:21:10 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/17 00:13:37 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -64,7 +64,7 @@ static void			sv_change_mode(t_grp *grp)
 	sv_send_channel(grp, 0);
 }
 
-static void			sv_get_mode(t_grp *grp, char **cmd)
+static void			sv_get_mode(t_grp *grp, char **cmd, t_env *e)
 {
 	grp->c = 1;
 	grp->ptr = *cmd;
@@ -79,7 +79,7 @@ static void			sv_get_mode(t_grp *grp, char **cmd)
 		else if (!ft_strchr(CHAN_MODES, *grp->ptr))
 			sv_err(ERR_UNKNOWNMODE, grp->mdr, grp->on->name, grp->from);
 		else if (*grp->ptr == 'o' || *grp->ptr == 'v')
-			sv_chan_user_mode(grp, &cmd);
+			sv_chan_user_mode(grp, &cmd, e);
 		else if (*grp->ptr == 'l' || *grp->ptr == 'k')
 			sv_change_more(grp, &cmd);
 		else if (*grp->ptr != 'O' &&
@@ -90,7 +90,7 @@ static void			sv_get_mode(t_grp *grp, char **cmd)
 	}
 }
 
-void				sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl)
+void				sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl, t_env *e)
 {
 	t_grp			grp;
 
@@ -110,5 +110,5 @@ void				sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl)
 	grp.from = cl;
 	grp.on = ch;
 	grp.to = NULL;
-	sv_get_mode(&grp, cmds);
+	sv_get_mode(&grp, cmds, e);
 }
