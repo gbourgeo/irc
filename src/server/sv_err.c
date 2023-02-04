@@ -6,77 +6,52 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/07/11 04:01:19 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:17:01 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 02:00:36 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
+#include "ft_snprintf.h"
+#include "ft_vsnprintf.h"
 #include <sys/socket.h>
 
-extern t_env	g_server;
+extern t_server		g_server;
+extern err_list_t	g_err_list[];
+extern size_t		g_err_list_size;
 
-static void		do_this(char *reply, char *reply2, char *cmd, t_fd *cl)
+/**
+ * @brief Sends an error notification to the client
+ * 
+ * @param errnum Error number
+ * @param client Client to send
+ * @param ... List of parameters to pass to the error string (see err_list.h)
+ */
+void			sv_err(errnum_list_e errnum, t_client *client, ...)
 {
-	sv_cl_write(" ", cl);
-	sv_cl_write(reply, cl);
-	if (reply2)
-	{
-		sv_cl_write(" ", cl);
-		sv_cl_write(reply2, cl);
-	}
-	else if (reply == NULL)
-	{
-		sv_cl_write(" ", cl);
-		sv_cl_write(cmd, cl);
-	}
-}
+	err_list_t	*err;
+	char		errstr[1024];
+	va_list		ap;
+	size_t		pos;
 
-static void		do_that(char *reply, char *cmd, char *cmd2, t_fd *cl)
-{
-	sv_cl_write(" ", cl);
-	sv_cl_write(cmd, cl);
-	if (reply)
+	pos = errnum - 400;
+	if (pos > 0 && pos < g_err_list_size)
 	{
-		sv_cl_write(" ", cl);
-		sv_cl_write(reply, cl);
-		if (cmd2)
+		err = &g_err_list[pos];
+		if (err->errnum != ERR_NOT_DEFINED)
 		{
-			sv_cl_write(" ", cl);
-			sv_cl_write(cmd2, cl);
+			ft_snprintf(errstr,
+				sizeof(errstr),
+				":%s %d %s ",
+				g_server.name,
+				errnum,
+				client->inf->nick);
+			pos = ft_strlen(errstr);
+			va_start(ap, client);
+			// va_start(ap, err->errstr);
+			ft_vsnprintf(errstr + pos, sizeof(errstr) - pos, err->errstr, ap);
+			va_end(ap);
+			ft_strncat(errstr, "\r\n", sizeof(errstr) - 3);
+			sv_cl_write(errstr, client);
 		}
-	}
-	else if (cmd2)
-	{
-		sv_cl_write(" ", cl);
-		sv_cl_write(cmd2, cl);
-	}
-}
-
-void			sv_err(char *err, char *cmd, char *cmd2, t_fd *cl)
-{
-	static char	*replies[][50] = { ERROR1, ERROR2, ERROR3, ERROR4, ERROR5,
-									ERROR6, ERROR7, ERROR8, ERROR9, ERROR10,
-									ERROR11 };
-	long		pos;
-
-	pos = ft_atoi(err) - 400;
-	if (pos >= 0 && pos <= ERR_LEN)
-	{
-		sv_cl_write(":", cl);
-		sv_cl_write(g_server.name, cl);
-		sv_cl_write(" ", cl);
-		sv_cl_write(err, cl);
-		sv_cl_write(" ", cl);
-		sv_cl_write(cl->inf->nick, cl);
-		if (replies[pos][0])
-			do_this(replies[pos][0], replies[pos][1], cmd, cl);
-		else if (cmd)
-			do_that(replies[pos][1], cmd, cmd2, cl);
-		if (replies[pos][2])
-		{
-			sv_cl_write(" ", cl);
-			sv_cl_write(replies[pos][2], cl);
-		}
-		sv_cl_write(END_CHECK, cl);
 	}
 }

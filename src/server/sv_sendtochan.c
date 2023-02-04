@@ -13,18 +13,18 @@
 #include "sv_main.h"
 #include <sys/socket.h>
 
-void			sv_sendto_chan_new(t_fd *cl)
+void			sv_sendto_chan_new(t_client *cl)
 {
 	(void)cl;
 }
 
-void			sv_sendto_chan_msg(char *msg, t_fd *cl)
+void			sv_sendto_chan_msg(char *msg, t_client *cl)
 {
 	(void)msg;
 	(void)cl;
 }
 
-void			sv_sendto_chan(t_chan *chan, t_fd *cl, t_env *e)
+void			sv_sendto_chan(t_chan *chan, t_client *cl, t_server *e)
 {
 	(void)chan;
 	(void)cl;

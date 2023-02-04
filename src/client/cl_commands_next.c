@@ -3,13 +3,14 @@
 /*                                                        :::      ::::::::   */
 /*   cl_commands_next.c                                 :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/12 03:46:51 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/03/12 03:57:57 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/11 14:25:23 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <unistd.h>
 #include "cl_main.h"
 
 void			cl_nosuchcommand(char **cmds, t_client *cl)

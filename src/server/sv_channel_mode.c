@@ -6,109 +6,109 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/19 04:20:45 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:13:37 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 00:00:19 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 
-static void			sv_send_channel(t_grp *grp, int limit)
+static void			sv_send_channel(t_grp *group, int limit)
 {
-	t_listin		*list;
+	t_listing		*list;
 
-	list = grp->on->users;
+	list = group->on->users;
 	while (list)
 	{
-		grp->to = (t_fd *)list->is;
-		rpl_cmode(grp, (limit) ? ft_itoa(grp->on->limit) : NULL);
+		group->to = (t_client *)list->is;
+		rpl_cmode(group, (limit) ? ft_itoa(group->on->limit) : NULL);
 		list = list->next;
 	}
 }
 
-static void			sv_change_more(t_grp *grp, char ***cmd)
+static void			sv_change_more(t_grp *group, char ***cmd)
 {
-	if (grp->c && *(*cmd + 1) == NULL)
+	if (group->c && *(*cmd + 1) == NULL)
 		return ;
-	if (!grp->c)
-		grp->on->cmode &= (*grp->ptr == 'l') ? ~(CHFL_LIMIT) : ~(CHFL_KEY);
+	if (!group->c)
+		group->on->cmode &= (*group->ptr == 'l') ? ~(CHFL_LIMIT) : ~(CHFL_KEY);
 	else
 	{
-		grp->on->cmode |= (*grp->ptr == 'l') ? CHFL_LIMIT : CHFL_KEY;
+		group->on->cmode |= (*group->ptr == 'l') ? CHFL_LIMIT : CHFL_KEY;
 		(*cmd)++;
-		if (*grp->ptr == 'l')
+		if (*group->ptr == 'l')
 		{
-			if ((grp->on->limit = ft_atoi(**cmd)) > 0)
-				return (sv_send_channel(grp, 1));
+			if ((group->on->limit = ft_atoi(**cmd)) > 0)
+				return (sv_send_channel(group, 1));
 		}
-		else if (*grp->ptr == 'k')
-			ft_strncpy(grp->on->key, **cmd, CHANKEY_LEN);
+		else if (*group->ptr == 'k')
+			ft_strncpy(group->on->key, **cmd, CHANKEY_LEN);
 	}
-	sv_send_channel(grp, 0);
+	sv_send_channel(group, 0);
 }
 
-static void			sv_change_mode(t_grp *grp)
+static void			sv_change_mode(t_grp *group)
 {
 	static int		chan_nbr[] = { CH_MODS1, CH_MODS2, CH_MODS3 };
 	char			*tmp;
 
-	tmp = ft_strchr(CHAN_MODES, *grp->ptr);
-	if ((grp->c && grp->on->cmode & chan_nbr[tmp - CHAN_MODES]) ||
-		(!grp->c && !(grp->on->cmode & chan_nbr[tmp - CHAN_MODES])) ||
-		(grp->c && (*grp->ptr == 'p' && grp->on->cmode & CHFL_SECRET)) ||
-		(grp->c && (*grp->ptr == 's' && grp->on->cmode & CHFL_PRIV)))
+	tmp = ft_strchr(CHAN_MODES, *group->ptr);
+	if ((group->c && group->on->cmode & chan_nbr[tmp - CHAN_MODES]) ||
+		(!group->c && !(group->on->cmode & chan_nbr[tmp - CHAN_MODES])) ||
+		(group->c && (*group->ptr == 'p' && group->on->cmode & CHFL_SECRET)) ||
+		(group->c && (*group->ptr == 's' && group->on->cmode & CHFL_PRIV)))
 		return ;
-	if (grp->c)
-		grp->on->cmode |= chan_nbr[tmp - CHAN_MODES];
+	if (group->c)
+		group->on->cmode |= chan_nbr[tmp - CHAN_MODES];
 	else
-		grp->on->cmode &= ~(chan_nbr[tmp - CHAN_MODES]);
-	sv_send_channel(grp, 0);
+		group->on->cmode &= ~(chan_nbr[tmp - CHAN_MODES]);
+	sv_send_channel(group, 0);
 }
 
-static void			sv_get_mode(t_grp *grp, char **cmd, t_env *e)
+static void			sv_get_mode(t_grp *group, char **cmd, t_server *server)
 {
-	grp->c = 1;
-	grp->ptr = *cmd;
-	grp->mdr[1] = 0;
-	while (*grp->ptr)
+	group->c = 1;
+	group->ptr = *cmd;
+	group->mdr[1] = 0;
+	while (*group->ptr)
 	{
-		grp->mdr[0] = *grp->ptr;
-		if (*grp->ptr == '+')
-			grp->c = 1;
-		else if (*grp->ptr == '-')
-			grp->c = 0;
-		else if (!ft_strchr(CHAN_MODES, *grp->ptr))
-			sv_err(ERR_UNKNOWNMODE, grp->mdr, grp->on->name, grp->from);
-		else if (*grp->ptr == 'o' || *grp->ptr == 'v')
-			sv_chan_user_mode(grp, &cmd, e);
-		else if (*grp->ptr == 'l' || *grp->ptr == 'k')
-			sv_change_more(grp, &cmd);
-		else if (*grp->ptr != 'O' &&
-				(*grp->ptr != 'a' || *grp->on->name == '&' ||
-				(*grp->on->name == '!' && grp->list->mode & CHFL_CREATOR)))
-			sv_change_mode(grp);
-		grp->ptr++;
+		group->mdr[0] = *group->ptr;
+		if (*group->ptr == '+')
+			group->c = 1;
+		else if (*group->ptr == '-')
+			group->c = 0;
+		else if (!ft_strchr(CHAN_MODES, *group->ptr))
+			sv_err(ERR_UNKNOWNMODE, group->from, group->mdr, group->on->name);
+		else if (*group->ptr == 'o' || *group->ptr == 'v')
+			sv_chan_user_mode(group, &cmd, server);
+		else if (*group->ptr == 'l' || *group->ptr == 'k')
+			sv_change_more(group, &cmd);
+		else if (*group->ptr != 'O' &&
+				(*group->ptr != 'a' || *group->on->name == '&' ||
+				(*group->on->name == '!' && group->list->mode & CHFL_CREATOR)))
+			sv_change_mode(group);
+		group->ptr++;
 	}
 }
 
-void				sv_channel_mode(char **cmds, t_chan *ch, t_fd *cl, t_env *e)
+void				sv_channel_mode(char **cmds, t_chan *channel, t_client *client, t_server *server)
 {
-	t_grp			grp;
+	t_grp			group;
 
-	if (*ch->name == '+')
-		return (sv_err(ERR_NOCHANMODES, ch->name, NULL, cl));
-	grp.list = ch->users;
-	while (grp.list)
+	if (*channel->name == '+')
+		return (sv_err(ERR_NOCHANMODES, client, channel->name));
+	group.list = channel->users;
+	while (group.list)
 	{
-		if (((t_fd *)grp.list->is)->i.fd == cl->i.fd)
+		if (((t_client *)group.list->is)->socket.fd == client->socket.fd)
 			break ;
-		grp.list = grp.list->next;
+		group.list = group.list->next;
 	}
-	if (grp.list == NULL)
-		return (sv_err(ERR_USERNOTINCHANNEL, cl->inf->nick, ch->name, cl));
-	if (!(grp.list->mode & CHFL_CREATOR) && !(grp.list->mode & CHFL_CHANOP))
-		return (sv_err(ERR_CHANOPRIVSNEEDED, ch->name, NULL, cl));
-	grp.from = cl;
-	grp.on = ch;
-	grp.to = NULL;
-	sv_get_mode(&grp, cmds, e);
+	if (group.list == NULL)
+		return (sv_err(ERR_USERNOTINCHANNEL, client, client->inf->nick, channel->name));
+	if (!(group.list->mode & CHFL_CREATOR) && !(group.list->mode & CHFL_CHANOP))
+		return (sv_err(ERR_CHANOPRIVSNEEDED, client, channel->name));
+	group.from = client;
+	group.on = channel;
+	group.to = NULL;
+	sv_get_mode(&group, cmds, server);
 }

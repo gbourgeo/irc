@@ -1,31 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_tabdel.c                                        :+:      :+:    :+:   */
+/*   ft_vsnprintf.h                                     :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2015/07/10 01:16:15 by gbourgeo          #+#    #+#             */
-/*   Updated: 2015/07/10 01:18:16 by gbourgeo         ###   ########.fr       */
+/*   Created: 2022/12/11 13:50:52 by gbourgeo          #+#    #+#             */
+/*   Updated: 2022/12/11 13:51:24 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
+#ifndef FT_VSNPRINTF_H
+# define FT_VSNPRINTF_H
 
-void			ft_tabdel(char **tab)
-{
-	int			i;
+# include "ft_base_printf.h"
 
-	i = 0;
-	if (tab)
-	{
-		while (tab[i])
-		{
-			free(tab[i]);
-			tab[i] = NULL;
-			i++;
-		}
-		free(tab);
-		tab = NULL;
-	}
-}
+int			ft_vsnprintf(char *str, size_t size,
+						const char *restrict format, va_list ap);
+void		ft_vsnprintf_write(t_dt *data);
+
+#endif

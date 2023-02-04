@@ -13,7 +13,7 @@
 #include "sv_main.h"
 #include <sys/socket.h>
 
-static void		rpl_quit(char **cmds, t_chan *ch, t_fd *to, t_fd *cl)
+static void		rpl_quit(char **cmds, t_chan *ch, t_client *to, t_client *cl)
 {
 	if (ch && ch->cmode & CHFL_ANON)
 	{
@@ -27,7 +27,7 @@ static void		rpl_quit(char **cmds, t_chan *ch, t_fd *to, t_fd *cl)
 	sv_cl_write("!~", to);
 	sv_cl_write(cl->inf->username, to);
 	sv_cl_write("@", to);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, to);
+	sv_cl_write((*cl->socket.host) ? cl->socket.host : cl->socket.addr, to);
 	sv_cl_write(" QUIT :", to);
 	if (cmds == NULL || !*cmds)
 		sv_cl_write("Client Quit", to);
@@ -40,10 +40,10 @@ static void		rpl_quit(char **cmds, t_chan *ch, t_fd *to, t_fd *cl)
 	sv_cl_write(END_CHECK, to);
 }
 
-void			sv_quit(char **cmds, t_env *e, t_fd *cl)
+void			sv_quit(char **cmds, t_server *e, t_client *cl)
 {
-	t_listin	*ch;
-	t_listin	*us;
+	t_listing	*ch;
+	t_listing	*us;
 
 	ch = cl->chans;
 	while (ch)
@@ -51,7 +51,7 @@ void			sv_quit(char **cmds, t_env *e, t_fd *cl)
 		us = ((t_chan *)ch->is)->users;
 		while (us)
 		{
-			if (((t_fd *)us->is)->i.fd != cl->i.fd)
+			if (((t_client *)us->is)->socket.fd != cl->socket.fd)
 				rpl_quit(cmds, ch->is, us->is, cl);
 			us = us->next;
 		}

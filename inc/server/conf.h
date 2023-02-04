@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   conf.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/04/07 05:20:47 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 07:04:36 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/11/27 16:27:35 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,31 +14,85 @@
 # define CONF_H
 
 # include <netdb.h>
+# include "common.h"
 
 # define CONF_FILE "irc.conf"
-# define AVAILABLE_LINES "MIO"
-# define M_LINES sv_machine_information
-# define I_LINES sv_client_connection
-# define O_LINES sv_operator_privilege
-# define ALL_LINES M_LINES, I_LINES, O_LINES
 
+/**
+ * @brief Enumeration of M lines
+ *
+ */
+enum
+{
+	M_LINE_MODE = 0,
+	M_LINE_SERVER_NAME,
+	M_LINE_SERVER_IP,
+	M_LINE_SERVER_LOCATION,
+	M_LINE_SERVER_PORT,
+	M_LINE_SERVER_ID,
+	M_LINE_MIN_ARGS,
+};
+
+/**
+ * @brief Enumeration of I lines
+ *
+ */
+enum
+{
+	I_LINE_MODE = 0,
+	I_LINE_HOST_ADDR,
+	I_LINE_PASSWORD,
+	I_LINE_HOST_NAME,
+	I_LINE_PORT,
+	I_LINE_CLASS,
+	I_LINE_FLAGS,
+	I_LINE_MIN_ARGS,
+};
+
+/**
+ * @brief Enumeration of O lines
+ *
+ */
+enum
+{
+	O_LINE_MODE = 0,
+	O_LINE_HOST_NAME,
+	O_LINE_PASSWORD,
+	O_LINE_NICKNAME,
+	O_LINE_PORT,
+	O_LINE_CLASS,
+	O_LINE_MIN_ARGS,
+};
+
+typedef struct	s_conf_line
+{
+	char		mode;
+	int			(*handler)(char **, void *);
+	int			min_args;
+}				t_conf_line;
+
+/**
+ * @brief Structure holding informations about a user
+ * defined in the irc configuration file.
+ */
 typedef struct		s_user
 {
-	char			mode;
-	char			hostaddr[ADDR_LEN + 1];
-	char			*passwd;
-	char			hostname[NI_MAXHOST + 1];
-	char			nick[NICK_LEN + 1];
-	char			port[6];
-	int				class;
+	char			mode;					/* User Privileges */
+	char			hostaddr[ADDR_LEN];		/* User Host name */
+	char			*passwd;				/* User Password */
+	char			hostname[NI_MAXHOST];	/* User Real Name */
+	char			nick[NICK_LEN];			/* User Nickname */
+	char			port[6];				/* User */
+	int				class;					/* User */
 	struct s_user	*next;
 }					t_user;
 
 typedef struct		s_conf
 {
-	t_user			*allowed_user;
-	t_user			*pass_user;
-	t_user			*opers;
+	const char		*conf_file;		/* Configuration file path */
+	t_user			*allowed_user;	/* List of allowed users.    In conf file, starts by I: and have an empty password field */
+	t_user			*pass_user;		/* List of restricted users. In conf file, starts by I: and have an non-empty password field */
+	t_user			*opers;			/* List of operator users.   In conf file, starts by O: */
 }					t_conf;
 
 #endif

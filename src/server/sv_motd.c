@@ -17,7 +17,7 @@
 ** Waiting for the RPL messages to be implemented.
 */
 
-static void		prefix(char rpl, char *str, t_fd *cl, t_env *e)
+static void		prefix(char rpl, char *str, t_client *cl, t_server *e)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -33,7 +33,7 @@ static void		prefix(char rpl, char *str, t_fd *cl, t_env *e)
 	sv_cl_write(END_CHECK, cl);
 }
 
-void			rpl_motd(t_fd *cl, t_env *e)
+void			rpl_motd(t_client *cl, t_server *e)
 {
 	prefix(0, "Message of the day -", cl, e);
 	prefix(1, "", cl, e);

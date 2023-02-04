@@ -12,9 +12,9 @@
 
 #include "sv_main.h"
 
-static void		sv_info_next(t_fd *user, t_fd *cl)
+static void		sv_info_next(t_client *user, t_client *cl)
 {
-	t_listin	*li;
+	t_listing	*li;
 	char		**tmp;
 
 	li = user->chans;
@@ -35,7 +35,7 @@ static void		sv_info_next(t_fd *user, t_fd *cl)
 	sv_cl_write(END_CHECK, cl);
 }
 
-void			sv_who_info(t_fd *us, t_fd *cl, t_env *e)
+void			sv_who_info(t_client *us, t_client *cl, t_server *e)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -49,7 +49,7 @@ void			sv_who_info(t_fd *us, t_fd *cl, t_env *e)
 	sv_cl_write(" ~", cl);
 	sv_cl_write(us->inf->username, cl);
 	sv_cl_write(" ", cl);
-	sv_cl_write(us->i.addr, cl);
+	sv_cl_write(us->socket.addr, cl);
 	sv_cl_write(" ", cl);
 	sv_cl_write(e->name, cl);
 	sv_cl_write(" ", cl);

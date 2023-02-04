@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   help.h                                             :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/17 01:14:30 by gbourgeo          #+#    #+#             */
-/*   Updated: 2018/09/18 15:03:29 by root             ###   ########.fr       */
+/*   Updated: 2022/10/18 11:48:05 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 # define HELP_H
 
 /*
-** Here are the defined Messages displayed in help <command>
+** Here are the defined Messages displayed with the help <command>
 */
 # define SYN1 "AWAY [<message>]"
 # define SYN2 "CONNECT <_host_> [<port>]"

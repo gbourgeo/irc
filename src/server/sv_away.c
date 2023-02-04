@@ -12,7 +12,7 @@
 
 #include "sv_main.h"
 
-void			rpl_away(t_fd *to, t_fd *cl, t_env *e)
+void			rpl_away(t_client *to, t_client *cl, t_server *e)
 {
 	sv_cl_write(":", to);
 	sv_cl_write(e->name, to);
@@ -25,7 +25,7 @@ void			rpl_away(t_fd *to, t_fd *cl, t_env *e)
 	sv_cl_write(END_CHECK, to);
 }
 
-static void		sv_away_msg(char *num, char *msg, t_fd *cl, t_env *e)
+static void		sv_away_msg(char *num, char *msg, t_client *cl, t_server *e)
 {
 	sv_cl_write(e->name, cl);
 	sv_cl_write(" ", cl);
@@ -37,7 +37,7 @@ static void		sv_away_msg(char *num, char *msg, t_fd *cl, t_env *e)
 	sv_cl_write(END_CHECK, cl);
 }
 
-static char		*sv_find_msg(t_fd *cl)
+static char		*sv_find_msg(t_client *cl)
 {
 	char		*ptr;
 
@@ -63,7 +63,7 @@ static char		*sv_find_msg(t_fd *cl)
 	return (ptr);
 }
 
-static void		sv_dupmsg(t_fd *cl)
+static void		sv_dupmsg(t_client *cl)
 {
 	char		*ptr;
 	int			len;
@@ -89,7 +89,7 @@ static void		sv_dupmsg(t_fd *cl)
 	}
 }
 
-void			sv_away(char **cmds, t_env *e, t_fd *cl)
+void			sv_away(char **cmds, t_server *e, t_client *cl)
 {
 	cl->inf->umode &= ~USR_AWAY;
 	if (cl->away)

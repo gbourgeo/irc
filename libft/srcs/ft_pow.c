@@ -1,25 +1,21 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_puttab.c                                        :+:      :+:    :+:   */
+/*   ft_pow.c                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2015/04/04 19:44:38 by gbourgeo          #+#    #+#             */
-/*   Updated: 2015/04/04 19:51:02 by gbourgeo         ###   ########.fr       */
+/*   Created: 2015/02/19 09:37:44 by gbourgeo          #+#    #+#             */
+/*   Updated: 2017/03/30 23:03:43 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
-
-void			ft_puttab(char **tab)
+int				ft_pow(int nb, int power)
 {
-	int			i;
-
-	i = 0;
-	while (tab && tab[i])
-	{
-		ft_putendl(tab[i]);
-		i++;
-	}
+	if (power <= 0)
+		return (1);
+	if (power == 1)
+		return (nb);
+	nb *= ft_pow(nb, power - 1);
+	return (nb);
 }

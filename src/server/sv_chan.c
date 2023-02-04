@@ -6,52 +6,55 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/06/26 18:34:44 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:11:23 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/31 21:17:35 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 
-static void		rpl_join(t_chan *ch, t_fd *to, t_fd *cl)
+static void	rpl_join(t_chan *ch, t_client *to, t_client *cl)
 {
 	sv_cl_write(":", to);
 	sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->inf->nick, to);
 	sv_cl_write("!~", to);
 	sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->inf->username, to);
 	sv_cl_write("@", to);
-	if (*cl->i.host)
-		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->i.host, to);
+	if (*cl->socket.host)
+		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->socket.host, to);
 	else
-		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->i.addr, to);
+		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->socket.addr, to);
 	sv_cl_write(" JOIN ", to);
 	sv_cl_write(ch->name, to);
 	sv_cl_write(END_CHECK, to);
 }
 
-void			send_joinmsg_toothers(t_chan *chan, t_fd *cl)
+void		send_joinmsg_toothers(t_chan *chan, t_client *client)
 {
-	t_listin	*other;
-	t_fd		*to;
+	t_listing	*other;
+	t_client		*to;
 
 	other = chan->users;
 	while (other)
 	{
-		to = (t_fd *)other->is;
-		if (!(chan->cmode & CHFL_QUIET) || to->i.fd == cl->i.fd)
-			rpl_join(chan, to, cl);
+		to = (t_client *)other->is;
+		if (!(chan->cmode & CHFL_QUIET) || to->socket.fd == client->socket.fd)
+			rpl_join(chan, to, client);
 		other = other->next;
 	}
 }
 
-t_listin		*sv_add_usertochan(t_fd *cl, t_chan *chan, t_env *e)
+t_listing	*sv_add_usertochan(t_client *client, t_chan *chan, t_server *server)
 {
-	t_listin	*new;
+	t_listing	*new;
 
-	(cl->inf->umode & USR_INVISIBL) ? chan->invisibl++ : chan->nbusers++;
+	(client->inf->umode & USR_INVISIBL) ? chan->invisibl++ : chan->nbusers++;
 	if ((new = malloc(sizeof(*new))) == NULL)
-		sv_error("ERROR: SERVER: out of memory", e);
+	{
+		sv_error(LOG_LEVEL_FATAL, "Out of memory", server);
+		return (NULL);
+	}
 	new->prev = NULL;
-	new->is = cl;
+	new->is = client;
 	new->mode = 0;
 	new->next = chan->users;
 	if (new->next)
@@ -59,16 +62,19 @@ t_listin		*sv_add_usertochan(t_fd *cl, t_chan *chan, t_env *e)
 	return (new);
 }
 
-t_listin		*sv_add_chantouser(t_chan *chan, t_fd *cl, t_env *e)
+t_listing	*sv_add_chantouser(t_chan *chan, t_client *client, t_server *server)
 {
-	t_listin	*new;
+	t_listing	*new;
 
 	if ((new = malloc(sizeof(*new))) == NULL)
-		sv_error("ERROR: SERVER: out of memory", e);
+	{
+		sv_error(LOG_LEVEL_FATAL, "Out of memory", server);
+		return (NULL);
+	}
 	new->prev = NULL;
 	new->is = chan;
 	new->mode = 0;
-	new->next = cl->chans;
+	new->next = client->chans;
 	if (new->next)
 		new->next->prev = new;
 	return (new);

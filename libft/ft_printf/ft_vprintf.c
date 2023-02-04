@@ -1,34 +1,30 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_lstnew.c                                        :+:      :+:    :+:   */
+/*   ft_vprintf.c                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2013/12/11 20:26:15 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/03/13 23:52:47 by gbourgeo         ###   ########.fr       */
+/*   Created: 2019/07/17 13:05:53 by gbourgeo          #+#    #+#             */
+/*   Updated: 2019/07/17 13:18:50 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include <unistd.h>
 #include "libft.h"
+#include "ft_vprintf.h"
 
-t_list		*ft_lstnew(void const *content, size_t content_size)
+int				ft_vprintf(const char *format, va_list ap)
 {
-	t_list	*new;
+	t_dt		data;
+	int			ret;
 
-	if ((new = (t_list*)malloc(sizeof(t_list))) == NULL)
-		return (NULL);
-	if (content == NULL)
-	{
-		new->content = NULL;
-		new->content_size = 0;
-	}
-	else
-	{
-		new->content = ft_memalloc(content_size);
-		new->content = ft_memcpy(new->content, content, content_size);
-		new->content_size = content_size;
-	}
-	new->next = NULL;
-	return (new);
+	ft_memset(&data, 0, sizeof(data));
+	data.fd = STDOUT_FILENO;
+	data.tail = (char *)format;
+	data.writeto = ft_vprintf_write;
+	va_copy(data.ap, ap);
+	ret = pf_routine(&data);
+	va_end(data.ap);
+	return (ret);
 }

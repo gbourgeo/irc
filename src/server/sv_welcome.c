@@ -25,7 +25,7 @@
 **        <available channel modes>"
 */
 
-static void			rpl_1_2_3(t_env *e, t_fd *cl)
+static void			rpl_1_2_3(t_server *e, t_client *cl)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -36,7 +36,7 @@ static void			rpl_1_2_3(t_env *e, t_fd *cl)
 	sv_cl_write("!~", cl);
 	sv_cl_write(cl->inf->username, cl);
 	sv_cl_write("@", cl);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, cl);
+	sv_cl_write((*cl->socket.host) ? cl->socket.host : cl->socket.addr, cl);
 	sv_cl_write(END_CHECK, cl);
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -54,7 +54,7 @@ static void			rpl_1_2_3(t_env *e, t_fd *cl)
 	sv_cl_write(e->creation, cl);
 }
 
-static void			rpl_4(t_env *e, t_fd *cl)
+static void			rpl_4(t_server *e, t_client *cl)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -69,7 +69,7 @@ static void			rpl_4(t_env *e, t_fd *cl)
 	sv_cl_write(END_CHECK, cl);
 }
 
-static void			convert(int nb, t_fd *cl, t_env *e)
+static void			convert(int nb, t_client *cl, t_server *e)
 {
 	char			*ptr;
 
@@ -79,7 +79,7 @@ static void			convert(int nb, t_fd *cl, t_env *e)
 	free(ptr);
 }
 
-static void			rpl_5_42(t_env *e, t_fd *cl)
+static void			rpl_5_42(t_server *e, t_client *cl)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -105,7 +105,7 @@ static void			rpl_5_42(t_env *e, t_fd *cl)
 	sv_cl_write(" :your unique ID\r\n", cl);
 }
 
-void				sv_welcome(t_env *e, t_fd *cl)
+void				sv_welcome(t_server *e, t_client *cl)
 {
 	rpl_1_2_3(e, cl);
 	rpl_4(e, cl);

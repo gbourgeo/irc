@@ -3,15 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   cl_commands.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/02 03:00:44 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/08 04:54:00 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/03 20:57:14 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "cl_main.h"
 #include <sys/socket.h>
+#include <unistd.h>
+#include "cl_main.h"
 
 static int		cl_nick_check(char *nick)
 {
@@ -82,18 +83,15 @@ void			cl_help(char **cmds, t_client *cl)
 	ft_putendl("QUIT");
 }
 
-void			cl_quit(char **cmds, t_client *cl)
+void			cl_quit(char **cmds, t_client *client)
 {
 	ft_free(&cmds);
-	if (cl->sock > 0)
-		close(cl->sock);
-	FD_ZERO(&cl->fds);
-	if (cl->pass)
-		free(cl->pass);
-	ft_free(&cl->user);
-	ft_memset(cl, 0, sizeof(*cl));
-	ft_putendl("Client leaved. Bye.");
-	exit(0);
+	if (client->sock > 0)
+		close(client->sock);
+	ft_strdel(&client->pass);
+	ft_free(&client->user);
+	tcsetattr(STDIN_FILENO, TCSANOW, &client->tattr);
+	ft_memset(client, 0, sizeof(*client));
 }
 
 void			cl_connect(char **cmds, t_client *cl)

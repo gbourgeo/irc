@@ -6,85 +6,97 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/20 04:05:11 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:18:58 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 00:32:18 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_snprintf.h"
 #include "sv_main.h"
 
-static void		rpl_msg_chan(char **cmds, t_chan *chan, t_fd *to, t_fd *cl)
+static void	rpl_msg_chan(char **text_to_send, t_chan *chan, t_client *to, t_client *client)
 {
+	char	msg[BUFF];
+
 	if (chan->cmode & CHFL_ANON)
-		sv_cl_write(":anonymous!~anonymous@anonymous", to);
+		ft_snprintf(msg,
+			sizeof(msg),
+			":anonymous!~anonymous@anonymous MSG %s :%s",
+			chan->name,
+			*text_to_send);
 	else
+		ft_snprintf(msg,
+			sizeof(msg),
+			":%s!~%s@%S MSG %s :%s",
+			client->inf->nick,
+			client->inf->username,
+			(*client->socket.host) ? client->socket.host : client->socket.addr,
+			chan->name,
+			*text_to_send);
+	while (*++text_to_send)
 	{
-		sv_cl_write(":", to);
-		sv_cl_write(cl->inf->nick, to);
-		sv_cl_write("!~", to);
-		sv_cl_write(cl->inf->username, to);
-		sv_cl_write("@", to);
-		sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, to);
+		ft_strncat(msg, " ", sizeof(msg) - ft_strlen(msg));
+		ft_strncat(msg, *text_to_send, sizeof(msg) - ft_strlen(msg));
 	}
-	sv_cl_write(" MSG ", to);
-	sv_cl_write(chan->name, to);
-	sv_cl_write(" :", to);
-	sv_cl_write(*cmds, to);
-	while (*++cmds)
-	{
-		sv_cl_write(" ", to);
-		sv_cl_write(*cmds, to);
-	}
-	sv_cl_write(END_CHECK, to);
+	ft_strncat(msg, END_CHECK, sizeof(msg) - ft_strlen(msg));
+	sv_cl_write(msg, to);
 }
 
-static void		sv_sendtochan(char **cmds, t_chan *chan, t_fd *cl)
+static void	sv_sendtochan(char **text_to_send, t_chan *chan, t_client *client)
 {
-	t_listin	*us;
-	t_fd		*to;
+	t_listing	*user;
+	t_client	*to;
 
-	us = chan->users;
-	while (us)
+	user = chan->users;
+	while (user)
 	{
-		to = (t_fd *)us->is;
-		if (to->i.fd != cl->i.fd)
-			rpl_msg_chan(cmds, chan, to, cl);
-		us = us->next;
+		to = (t_client *)user->is;
+		if (to->socket.fd != client->socket.fd)
+			rpl_msg_chan(text_to_send, chan, to, client);
+		user = user->next;
 	}
 }
 
-static int		user_got_mod(t_chan *ch, t_fd *cl)
+static int	user_got_mod(t_chan *chan, t_client *client)
 {
-	t_listin	*list;
+	t_listing	*user;
 
-	list = ch->users;
-	while (list)
+	user = chan->users;
+	while (user)
 	{
-		if (((t_fd *)list->is)->i.fd == cl->i.fd)
+		if (((t_client *)user->is)->socket.fd == client->socket.fd)
 		{
-			if (list->mode & CHFL_CHANOP || list->mode & CHFL_VOICE)
+			if (user->mode & CHFL_CHANOP || user->mode & CHFL_VOICE)
 				return (1);
 			return (0);
 		}
-		list = list->next;
+		user = user->next;
 	}
 	return (0);
 }
 
-void			sv_msg_chan(char *chan_name, char **cmds, t_fd *cl, t_env *e)
+/**
+ * @brief Send message to channel
+ * 
+ * @param chan_name Channel name
+ * @param text_to_send Text to send
+ * @param client Client
+ * @param server Server
+ */
+void		sv_msg_chan(char *chan_name, char **text_to_send, t_client *client, t_server *server)
 {
-	t_chan		*ch;
+	t_chan	*chan;
 
-	ch = e->chans;
-	while (ch)
+	chan = server->chans;
+	while (chan)
 	{
-		if (!sv_strcmp(ch->name, chan_name))
+		if (!sv_strcmp(chan->name, chan_name))
 		{
-			if ((ch->cmode & CHFL_MOD && !user_got_mod(ch, cl)) ||
-				(ch->cmode & CHFL_NOMSG && !is_chan_member(ch, cl)))
+			if ((chan->cmode & CHFL_MOD && !user_got_mod(chan, client)) ||
+				(chan->cmode & CHFL_NOMSG && !is_chan_member(chan, client)))
 				break ;
-			return (sv_sendtochan(cmds, ch, cl));
+			return (sv_sendtochan(text_to_send, chan, client));
 		}
-		ch = ch->next;
+		chan = chan->next;
 	}
-	sv_err(ERR_CANNOTSENDTOCHAN, chan_name, NULL, cl);
+	sv_err(ERR_CANNOTSENDTOCHAN, client, chan_name);
 }

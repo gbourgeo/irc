@@ -3,47 +3,45 @@
 /*                                                        :::      ::::::::   */
 /*   sv_oper.c                                          :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/04/08 03:01:56 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:34:17 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 02:12:16 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_snprintf.h"
 #include "sv_main.h"
 
-static void		new_op(t_user *op, t_fd *cl)
+static void		new_op(t_user *op, t_client *client)
 {
-	cl->inf->umode |= (op->mode == 'O') ? USR_OP : USR_LOCALOP;
-	sv_cl_write(":", cl);
-	sv_cl_write(cl->inf->nick, cl);
-	sv_cl_write("!~", cl);
-	sv_cl_write(cl->inf->username, cl);
-	sv_cl_write("@", cl);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, cl);
-	sv_cl_write(" MODE ", cl);
-	sv_cl_write(cl->inf->nick, cl);
-	sv_cl_write((op->mode == 'O') ? " :+O" : " +o", cl);
-	sv_cl_write(END_CHECK, cl);
+	char	msg[BUFF];
+
+	client->inf->umode |= (op->mode == 'O') ? USR_OP : USR_LOCALOP;
+	ft_snprintf(msg, sizeof(msg), ":%s!~%s@%s MODE %s :+%c" END_CHECK,
+		client->inf->nick, client->inf->username,
+		(*client->socket.host) ? client->socket.host : client->socket.addr,
+		client->inf->nick, (op->mode == 'O') ? 'O' : 'o');
+	sv_cl_write(msg, client);
 }
 
-void			sv_oper(char **cmds, t_env *e, t_fd *cl)
+void			sv_oper(char **cmds, t_server *server, t_client *client)
 {
-	t_user		*op;
+	t_user		*oper;
 
 	if (!cmds[0] || !cmds[1])
-		return (sv_err(ERR_NEEDMOREPARAMS, NULL, NULL, cl));
-	op = e->conf.opers;
-	while (op)
+		return (sv_err(ERR_NEEDMOREPARAMS, client, "OPER"));
+	oper = server->conf.opers;
+	while (oper)
 	{
-		if (!ft_strcmp(op->hostname, cl->i.host) &&
-			!ft_strcmp(op->nick, cmds[0]))
+		if (!ft_strcmp(oper->hostname, client->socket.host) &&
+			!ft_strcmp(oper->nick, cmds[0]))
 		{
-			if (!ft_strcmp(op->passwd, cmds[1]))
-				return (new_op(op, cl));
-			return (sv_err(ERR_PASSWDMISMATCH, NULL, NULL, cl));
+			if (!ft_strcmp(oper->passwd, cmds[1]))
+				return (new_op(oper, client));
+			return (sv_err(ERR_PASSWDMISMATCH, NULL, NULL, client));
 		}
-		op = op->next;
+		oper = oper->next;
 	}
-	sv_err(ERR_NOOPERHOST, NULL, NULL, cl);
+	sv_err(ERR_NOOPERHOST, NULL, NULL, client);
 }

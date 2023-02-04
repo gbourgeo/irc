@@ -15,18 +15,18 @@
 void			rpl_cmode(t_grp *g, char *limit)
 {
 	sv_cl_write(":", g->to);
-	sv_cl_write((g->on->cmode & CHFL_ANON && g->to->i.fd != g->from->i.fd) ?
+	sv_cl_write((g->on->cmode & CHFL_ANON && g->to->socket.fd != g->from->socket.fd) ?
 				"anonymous" : g->from->inf->nick, g->to);
 	sv_cl_write("!~", g->to);
-	sv_cl_write((g->on->cmode & CHFL_ANON && g->to->i.fd != g->from->i.fd) ?
+	sv_cl_write((g->on->cmode & CHFL_ANON && g->to->socket.fd != g->from->socket.fd) ?
 				"anonymous" : g->from->inf->username, g->to);
 	sv_cl_write("@", g->to);
-	if (*g->from->i.host)
-		sv_cl_write((g->on->cmode & CHFL_ANON && g->to->i.fd != g->from->i.fd) ?
-					"anonymous" : g->from->i.host, g->to);
+	if (*g->from->socket.host)
+		sv_cl_write((g->on->cmode & CHFL_ANON && g->to->socket.fd != g->from->socket.fd) ?
+					"anonymous" : g->from->socket.host, g->to);
 	else
-		sv_cl_write((g->on->cmode & CHFL_ANON && g->to->i.fd != g->from->i.fd) ?
-					"anonymous" : g->from->i.addr, g->to);
+		sv_cl_write((g->on->cmode & CHFL_ANON && g->to->socket.fd != g->from->socket.fd) ?
+					"anonymous" : g->from->socket.addr, g->to);
 	sv_cl_write(" MODE ", g->to);
 	sv_cl_write(g->on->name, g->to);
 	sv_cl_write((g->c) ? " +" : " -", g->to);
@@ -41,17 +41,17 @@ void			rpl_cmode(t_grp *g, char *limit)
 		free(limit);
 }
 
-void			rpl_umode(t_grp *g, t_chan *c, t_fd *to, t_fd *cl)
+void			rpl_umode(t_grp *g, t_chan *c, t_client *to, t_client *cl)
 {
 	sv_cl_write(":", to);
 	sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->inf->nick, to);
 	sv_cl_write("!~", to);
 	sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->inf->username, to);
 	sv_cl_write("@", to);
-	if (*cl->i.host)
-		sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->i.host, to);
+	if (*cl->socket.host)
+		sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->socket.host, to);
 	else
-		sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->i.addr, to);
+		sv_cl_write((c->cmode & CHFL_ANON) ? "anonymous" : cl->socket.addr, to);
 	sv_cl_write(" MODE ", to);
 	sv_cl_write(c->name, to);
 	sv_cl_write((g->c) ? " :+" : " :-", to);

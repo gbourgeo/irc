@@ -6,106 +6,106 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/17 04:52:38 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:23:58 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/21 14:20:41 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 #include <time.h>
 
-static void			wrong_username(t_fd *cl, t_env *e)
+static void		wrong_username(t_client *client, t_server *server)
 {
-	char			*ptr;
+	char		*ptr;
 
 	ptr = "Your username is invalid. Please make sure that your "\
 		"username contains only alphanumeric characters.";
-	cl->leaved = 2;
-	cl->reason = "Invalid username";
-	sv_notice(ptr, cl, e);
+	client->leaved = 2;
+	client->reason = "Invalid username";
+	sv_notice(ptr, client, server);
 }
 
-static void			error_loggin_in(char *err, t_fd *cl, t_env *e)
+static void		error_loggin_in(char *err, t_client *client, t_server *server)
 {
-	char			*ptr;
+	char		*ptr;
 
 	if (*err == 0)
 	{
 		ptr = "This nickname is registered. You have 30 sec to choose a "\
 			"different nickname or it will be changed automatically.";
-		sv_notice(ptr, cl, e);
-		time(&cl->inf->must_change_nick);
+		sv_notice(ptr, client, server);
+		time(&client->inf->must_change_nick);
 	}
 	else
 	{
-		cl->leaved = 1;
-		cl->reason = err;
-		sv_notice("You failed to log to the server. Try again later.", cl, e);
+		client->leaved = 1;
+		client->reason = err;
+		sv_notice("Logging to the server failed. Try again.", client, server);
 	}
 }
 
-static void			check_registered(t_fd *cl, t_env *e)
+static void		check_registered(t_client *client, t_server *server)
 {
-	t_file			*us;
+	t_file		*us;
 
-	us = e->users;
+	us = server->users;
 	while (us)
 	{
-		if (!sv_strcmp(us->nick, cl->inf->nick))
+		if (!sv_strcmp(us->nick, client->inf->nick))
 		{
-			if (us->registered <= 0 && cl->inf->pass &&
-				!ft_strcmp(us->pass, cl->inf->pass))
+			if (us->registered <= 0 && client->inf->pass
+			&& !ft_strcmp(us->pass, client->inf->pass))
 			{
-				free(cl->inf->pass);
-				ft_free(&cl->inf->realname);
-				free(cl->inf);
-				cl->inf = us;
+				free(client->inf->pass);
+				ft_free(&client->inf->realname);
+				free(client->inf);
+				client->inf = us;
 				break ;
 			}
-			sv_welcome(e, cl);
-			return (error_loggin_in("", cl, e));
+			sv_welcome(server, client);
+			return (error_loggin_in("", client, server));
 		}
 		us = us->next;
 	}
-	sv_welcome(e, cl);
+	sv_welcome(server, client);
 }
 
-static void			check_allowed(t_fd *cl, t_env *e)
+static void		check_allowed(t_client *client, t_server *server)
 {
-	t_user			*us;
+	t_user		*user;
 
-	if (sv_allowed(&cl->i, e->conf.allowed_user))
-		return (check_registered(cl, e));
-	if ((us = sv_allowed(&cl->i, e->conf.pass_user)))
+	if (sv_allowed(&client->socket, server->conf.allowed_user))
+		return (check_registered(client, server));
+	if ((user = sv_allowed(&client->socket, server->conf.pass_user)))
 	{
-		if (!ft_strcmp(us->passwd, cl->inf->pass))
-			return (sv_welcome(e, cl));
+		if (!ft_strcmp(user->passwd, client->inf->pass))
+			return (sv_welcome(server, client));
 	}
-	error_loggin_in("Not allowed to login", cl, e);
+	error_loggin_in("Not allowed to login", client, server);
 }
 
-void				sv_check_clients(t_env *e)
+void			sv_check_clients(t_server *server)
 {
-	t_fd			*cl;
+	t_client	*client;
 
-	cl = e->fds;
-	while (cl)
+	client = server->clients;
+	while (client)
 	{
-		if (cl->inf->must_change_nick > 0)
-			sv_nick_change(cl, e);
-		if (cl->leaved)
+		if (client->inf->must_change_nick > 0)
+			sv_nick_change(client, server);
+		if (client->leaved)
 		{
-			if (cl->wr.len == 0)
-				cl = sv_clear_client(e, cl);
+			if (client->wr.len == 0)
+				client = sv_clear_client(client, server);
 		}
-		else if (cl->inf->registered <= 0 && *cl->inf->nick &&
-				*cl->inf->username)
+		else if (client->inf->registered <= 0 && *client->inf->nick
+		&& *client->inf->username)
 		{
-			if (!ft_strisalnum(cl->inf->username))
-				wrong_username(cl, e);
+			if (!ft_strisalnum(client->inf->username))
+				wrong_username(client, server);
 			else
-				check_allowed(cl, e);
+				check_allowed(client, server);
 		}
-		if (cl)
-			cl = cl->next;
+		if (client)
+			client = client->next;
 	}
 }

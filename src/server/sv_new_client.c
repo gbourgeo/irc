@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/07/26 17:26:04 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:21:49 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/03 00:21:07 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -17,56 +17,65 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 
-static void			sv_init_buf(t_buf *info, char *buff, int len)
+/**
+ * @brief Set the client an unique identifier (uid).
+ * The uid is on the form:
+ * 	- 4 digits from '0' to '9'
+ * 	- 5 uppercase letters from 'A' to 'Z'
+ * 
+ * @param client The client to set the uid
+ */
+static void		set_client_uid(t_client *client)
 {
-	info->start = &buff[0];
-	info->end = &buff[BUFF + 1];
-	info->head = &buff[0];
-	info->tail = &buff[0];
-	info->len = len;
-}
+	static char	userid[UID_LEN + 1] = { 0 };
+	int			i;
 
-/*
-** If, in client_id(...), i == 3 we have all the unique user identity taken.
-** Shall we accept new connection ? Seems not pretty legit...
-*/
-
-static void			client_uid(t_fd *cl, t_env *e)
-{
-	int				i;
-
-	i = 8;
-	ft_strcpy(cl->uid, e->userid);
-	while (i > 3 && e->userid[i] == 'Z')
+	if (userid[0] == '\0')
 	{
-		e->userid[i] = 'A';
+		ft_strncpy(userid, "1234AAAAA", UID_LEN + 1);
+		userid[UID_LEN] = '\0';
+	}
+	i = UID_LEN;
+	ft_strcpy(client->uid, userid);
+	while (i > 3 && userid[i] >= 'Z')
+	{
+		userid[i] = 'A';
 		i--;
 	}
-	if (i > 3)
-		e->userid[i] += 1;
+	if (i < 4)
+	{
+		while (i > 0 && userid[i] >= '9')
+		{
+			userid[i] = '0';
+			i--;
+		}
+	}
+	if (i >= 0)
+		userid[i] += 1;
 }
 
-void				sv_new_client(t_info *info, t_env *e)
+int				sv_new_client(t_socket *socket, t_client **clients)
 {
-	t_fd			*cl;
+	t_client	*cl;
 
-	if ((cl = (t_fd *)malloc(sizeof(*cl))) == NULL)
-		sv_error("ERROR :Malloc (t_fd) failed.", e);
+	if ((cl = (t_client *)malloc(sizeof(*cl))) == NULL)
+		return (sv_log(LOG_LEVEL_ERROR, LOG_TYPE_SYSTEM, "Malloc failed"));
 	ft_memset(cl, 0, sizeof(*cl));
-	ft_memcpy(&cl->i, info, sizeof(*info));
-	client_uid(cl, e);
+	ft_memcpy(&cl->socket, socket, sizeof(*socket));
+	set_client_uid(cl);
 	if ((cl->inf = (t_file *)malloc(sizeof(*cl->inf))) == NULL)
-		sv_error("ERROR :Malloc failed\r\n", e);
+		return (sv_log(LOG_LEVEL_ERROR, LOG_TYPE_SYSTEM, "Malloc failed"));
 	ft_memset(cl->inf, 0, sizeof(*cl->inf));
 	cl->type = FD_CLIENT;
 	cl->fct_read = sv_cl_read;
 	cl->fct_write = sv_cl_send;
-	sv_init_buf(&cl->rd, cl->buf_read, BUFF);
-	sv_init_buf(&cl->wr, cl->buf_write, 0);
-	if (e->fds)
-		e->fds->prev = cl;
-	cl->next = e->fds;
-	e->fds = cl;
-	if (e->verb)
-		printf("Connection %s(%s):%s\n", cl->i.addr, cl->i.host, cl->i.port);
+	ft_init_ringbuf(&cl->rd, cl->buf_read, BUFF);
+	ft_init_ringbuf(&cl->wr, cl->buf_write, 0);
+	if (*clients != NULL)
+		(*clients)->prev = cl;
+	cl->next = *clients;
+	*clients = cl;
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "New client from %s(%s):%s",
+		cl->socket.addr, cl->socket.host, cl->socket.port);
+	return (0);
 }

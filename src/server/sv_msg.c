@@ -6,70 +6,79 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/02 18:01:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:19:24 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 00:22:21 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sv_main.h"
 #include <sys/socket.h>
+#include "ft_snprintf.h"
+#include "sv_main.h"
 
-static void		rpl_msg(char **cmds, t_fd *to, t_fd *cl)
+static void		rpl_msg(char **text_to_send, t_client *to, t_client *client)
 {
-	sv_cl_write(":", to);
-	sv_cl_write(cl->inf->nick, to);
-	sv_cl_write("!~", to);
-	sv_cl_write(cl->inf->username, to);
-	sv_cl_write("@", to);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, to);
-	sv_cl_write(" MSG ", to);
-	sv_cl_write(to->inf->nick, to);
-	sv_cl_write(" :", to);
-	sv_cl_write(*cmds, to);
-	while (*++cmds)
+	char	msg[BUFF];
+
+	ft_snprintf(msg,
+		sizeof(msg),
+		":%s!~%s@%s MSG %s :%s",
+		client->inf->nick,
+		client->inf->username,
+		(*client->socket.host) ? client->socket.host : client->socket.addr,
+		to->inf->nick,
+		*text_to_send);
+	while (*++text_to_send)
 	{
-		sv_cl_write(" ", to);
-		sv_cl_write(*cmds, to);
+		ft_strncat(msg, " ", sizeof(msg) - ft_strlen(msg));
+		ft_strncat(msg, *text_to_send, sizeof(msg) - ft_strlen(msg));
 	}
-	sv_cl_write(END_CHECK, to);
+	ft_strncat(msg, END_CHECK, sizeof(msg) - ft_strlen(msg));
+	sv_cl_write(msg, to);
 }
 
-static void		sv_msg_client(char *nick, char **cmds, t_fd *cl, t_env *e)
+static void		sv_msg_client(char *nick, char **text_to_send, t_client *client, t_server *server)
 {
-	t_fd		*to;
+	t_client	*clients;
 
-	to = e->fds;
-	while (to)
+	clients = server->clients;
+	while (clients)
 	{
-		if (!sv_strcmp(nick, to->inf->nick))
+		if (!sv_strcmp(nick, clients->inf->nick))
 		{
-			rpl_msg(cmds, to, cl);
-			if (to->inf->umode &= USR_AWAY)
-				rpl_away(cl, to, e);
+			rpl_msg(text_to_send, clients, client);
+			if (clients->inf->umode &= USR_AWAY)
+				rpl_away(client, clients, server);
 			return ;
 		}
-		to = to->next;
+		clients = clients->next;
 	}
-	sv_err(ERR_NOSUCHNICK, nick, NULL, cl);
+	sv_err(ERR_NOSUCHNICK, client, nick);
 }
 
-void			sv_msg(char **cmds, t_env *e, t_fd *cl)
+/**
+ * @brief Send private messages between users, as well as to send messages to channels.
+ * 
+ * @param cmds <target>{,<target>} <text to be sent>
+ * @param server Server
+ * @param client Client
+ */
+void			sv_msg(char **cmds, t_server *server, t_client *client)
 {
 	char		**targets;
 	int			i;
 
 	if (!cmds[0] || *cmds[0] == '\0')
-		return (sv_err(ERR_NORECIPIENT, "MSG", NULL, cl));
+		return (sv_err(ERR_NORECIPIENT, client, "MSG"));
 	if (!cmds[1] || !*cmds[1])
-		return (sv_err(ERR_NOTEXTTOSEND, "MSG", NULL, cl));
+		return (sv_err(ERR_NOTEXTTOSEND, client, "MSG"));
 	if ((targets = ft_strsplit(cmds[0], ',')) == NULL)
-		sv_error("ERROR: Server out of memory", e);
+		return (sv_error(LOG_LEVEL_FATAL, "Out of memory", server));
 	i = 0;
 	while (targets[i])
 	{
 		if (ISCHAN(*targets[i]))
-			sv_msg_chan(targets[i], cmds + 1, cl, e);
+			sv_msg_chan(targets[i], cmds + 1, client, server);
 		else
-			sv_msg_client(targets[i], cmds + 1, cl, e);
+			sv_msg_client(targets[i], cmds + 1, client, server);
 		i++;
 	}
 	ft_free(&targets);

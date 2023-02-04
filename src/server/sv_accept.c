@@ -6,101 +6,130 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/21 17:16:50 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:21:03 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/11 14:25:52 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sv_main.h"
 #include <sys/socket.h>
 #include <arpa/inet.h>
+#include <unistd.h>
+#include "sv_main.h"
 
-static int			sv_check_clone(t_env *e, struct sockaddr *csin)
+typedef struct sockaddr_in	sockaddr_in_t;
+typedef struct sockaddr_in6	sockaddr_in6_t;
+
+#define V4_ADDR(csin) &((sockaddr_in_t *)&csin)->sin_addr.s_addr
+#define V6_ADDR(csin) &((sockaddr_in6_t *)&csin)->sin6_addr.s6_addr
+
+static int		sv_check_clone(t_client *clients, struct sockaddr *csin)
 {
-	t_fd			*cl;
-	size_t			clone;
+	size_t		clones;
+	size_t		addr_len;
 
-	cl = e->fds;
-	clone = 0;
-	while (cl)
+	clones = 0;
+	addr_len = (csin->sa_family == AF_INET) ?
+		sizeof(((sockaddr_in_t *)csin)->sin_addr.s_addr) :
+		sizeof(((sockaddr_in6_t *)csin)->sin6_addr.s6_addr);
+	while (clients)
 	{
-		if (cl->i.csin.sa_family == csin->sa_family)
+		if (clients->socket.csin.sa_family == csin->sa_family)
 		{
-			if (csin->sa_family == AF_INET &&
-				!ft_memcmp(&((struct sockaddr_in *)&cl->i.csin)->sin_addr,
-							&((struct sockaddr_in *)csin)->sin_addr,
-							sizeof(struct in_addr)))
-				clone++;
-			else if (csin->sa_family == AF_INET6 &&
-				!ft_memcmp(&((struct sockaddr_in6 *)&cl->i.csin)->sin6_addr,
-							&((struct sockaddr_in6 *)csin)->sin6_addr,
-							sizeof(struct in6_addr)))
-				clone++;
+			if (csin->sa_family == AF_INET)
+				clones += ft_memcmp(V4_ADDR(clients->socket.csin),
+									V4_ADDR(*csin), addr_len) == 0;
+			else if (csin->sa_family == AF_INET6)
+				clones += ft_memcmp(V6_ADDR(clients->socket.csin),
+									V6_ADDR(*csin), addr_len) == 0;
 		}
-		cl = cl->next;
+		clients = clients->next;
 	}
-	return (clone);
+	return (clones);
 }
 
-static void			sv_info(char *str, int fd, t_env *e)
+static void		sv_send_info(int fd, char *server_name, char *str)
 {
-	char			buf[248];
+	char		buf[248];
 
-	ft_bzero(buf, 248);
 	ft_strcpy(buf, ":");
-	ft_strcat(buf, e->name);
+	ft_strcat(buf, server_name);
 	ft_strcat(buf, " NOTICE * :*** ");
 	ft_strcat(buf, str);
 	ft_strcat(buf, END_CHECK);
-	send(fd, buf, 248, 0);
-	if (e->verb)
-		ft_putstr(buf);
+	send(fd, buf, ft_strlen(buf), MSG_DONTWAIT | MSG_NOSIGNAL);
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s", str);
 }
 
-static void			sv_nope(char *str, t_info *inf, t_env *e)
+static int		sv_accept_failed(char *str, t_socket *socket)
 {
-	char			buf[248];
+	char		buf[248];
 
-	ft_bzero(buf, 248);
 	ft_strcpy(buf, "ERROR :Closing Link: ");
-	ft_strcat(buf, inf->addr);
+	ft_strcat(buf, socket->addr);
 	ft_strcat(buf, "@");
-	ft_strcat(buf, inf->host);
+	ft_strcat(buf, socket->host);
 	ft_strcat(buf, ":");
-	ft_strcat(buf, inf->port);
+	ft_strcat(buf, socket->port);
 	ft_strcat(buf, " ");
 	ft_strcat(buf, str);
 	ft_strcat(buf, END_CHECK);
-	send(inf->fd, buf, 248, 0);
-	close(inf->fd);
-	if (e->verb)
-		ft_putstr(buf);
+	send(socket->fd, buf, ft_strlen(buf), MSG_DONTWAIT | MSG_NOSIGNAL);
+	close(socket->fd);
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s", str);
+	return (0);
 }
 
-void				sv_accept(t_env *e, int ipv6)
+int				sv_accept_v4(t_server *server)
 {
-	t_info			inf;
-	socklen_t		len;
+	t_socket	socket;
+	socklen_t	len;
 
-	len = sizeof(inf.csin);
-	if ((inf.fd = accept((!ipv6) ? e->v4.fd : e->v6.fd, &inf.csin, &len)) < 0)
-		sv_error("ERROR: SERVER: Accept() returned.", e);
-	sv_info("Looking up your ident...", inf.fd, e);
-	if (getsockname(inf.fd, &inf.csin, &len))
-		sv_info("Couldn't retreive your ident", inf.fd, e);
-	sv_info("Looking up your hostname...", inf.fd, e);
-	if (getnameinfo(&inf.csin, sizeof(inf.csin), inf.host, NI_MAXHOST,
-					inf.port, NI_MAXSERV, NI_NUMERICSERV))
-		sv_info("Couldn't look up your hostname", inf.fd, e);
-	if (ipv6)
-		inet_ntop(AF_INET6, V6ADDR(&inf.csin), inf.addr, sizeof(inf.addr));
-	else
-		inet_ntop(AF_INET, V4ADDR(&inf.csin), inf.addr, sizeof(inf.addr));
-	if (e->members + 1 >= MAX_CLIENT)
-		return (sv_nope("Maximum clients reached.", &inf, e));
-	if (sv_check_clone(e, &inf.csin) >= MAX_CLIENT_BY_IP)
-		return (sv_nope("Max Clients per IP reached.", &inf, e));
-	if (sv_allowed(&inf, e->conf.allowed_user) ||
-		sv_allowed(&inf, e->conf.pass_user))
-		return (sv_new_client(&inf, e));
-	sv_nope("Not allowed to login to the server.", &inf, e);
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "Accepting new connection");
+	len = sizeof(socket.csin);
+	if ((socket.fd = accept(server->v4.fd, &socket.csin, &len)) < 0)
+		return (sv_log(LOG_LEVEL_ERROR, LOG_TYPE_SYSTEM,
+			"Accept failed: %s", strerror(errno)));
+	sv_send_info(socket.fd, server->name, "Looking up your ident...");
+	if (getsockname(socket.fd, &socket.csin, &len))
+		sv_send_info(socket.fd, server->name, "Couldn't retreive your ident");
+	sv_send_info(socket.fd, server->name, "Looking up your hostname...");
+	if (getnameinfo(&socket.csin, sizeof(socket.csin), socket.host, NI_MAXHOST,
+	socket.port, NI_MAXSERV, NI_NUMERICSERV))
+		sv_send_info(socket.fd, server->name, "Couldn't look up your hostname");
+	inet_ntop(AF_INET, V4_ADDR(socket.csin), socket.addr, sizeof(socket.addr));
+	if (server->members + 1 >= MAX_CLIENT)
+		return (sv_accept_failed("Maximum clients reached.", &socket));
+	if (sv_check_clone(server->clients, &socket.csin) >= MAX_CLIENT_BY_IP)
+		return (sv_accept_failed("Max Clients per IP reached.", &socket));
+	if (sv_allowed(&socket, server->conf.allowed_user)
+	|| sv_allowed(&socket, server->conf.pass_user))
+		return (sv_new_client(&socket, &server->clients));
+	return (sv_accept_failed("Not allowed to login to the server.", &socket));
+}
+
+int				sv_accept_v6(t_server *server)
+{
+	t_socket	socket;
+	socklen_t	len;
+
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "Accepting new connection");
+	len = sizeof(socket.csin);
+	if ((socket.fd = accept(server->v6.fd, &socket.csin, &len)) < 0)
+		return (sv_log(LOG_LEVEL_ERROR, LOG_TYPE_SYSTEM,
+			"Accept failed: %s", strerror(errno)));
+	sv_send_info(socket.fd, server->name, "Looking up your ident...");
+	if (getsockname(socket.fd, &socket.csin, &len))
+		sv_send_info(socket.fd, server->name, "Couldn't retreive your ident");
+	sv_send_info(socket.fd, server->name, "Looking up your hostname...");
+	if (getnameinfo(&socket.csin, sizeof(socket.csin), socket.host, NI_MAXHOST,
+					socket.port, NI_MAXSERV, NI_NUMERICSERV))
+		sv_send_info(socket.fd, server->name, "Couldn't look up your hostname");
+	inet_ntop(AF_INET6, V6_ADDR(socket.csin), socket.addr, sizeof(socket.addr));
+	if (server->members + 1 >= MAX_CLIENT)
+		return (sv_accept_failed("Maximum clients reached.", &socket));
+	if (sv_check_clone(server->clients, &socket.csin) >= MAX_CLIENT_BY_IP)
+		return (sv_accept_failed("Max Clients per IP reached.", &socket));
+	if (sv_allowed(&socket, server->conf.allowed_user)
+	|| sv_allowed(&socket, server->conf.pass_user))
+		return (sv_new_client(&socket, &server->clients));
+	return (sv_accept_failed("Not allowed to login to the server.", &socket));
 }

@@ -3,33 +3,34 @@
 /*                                                        :::      ::::::::   */
 /*   sv_clear_client.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/16 21:57:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:41:50 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/31 13:59:45 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sv_main.h"
 #include <stdio.h>
+#include <unistd.h>
+#include "sv_main.h"
 
-static void		sv_free_client_onchans(t_fd *cl, t_listin *chan)
+static void		sv_free_client_onchans(t_client *client, t_listing *chan)
 {
-	t_listin	*list;
+	t_listing	*list;
 
 	if (!chan)
 		return ;
 	list = ((t_chan *)chan->is)->users;
 	while (list)
 	{
-		if (((t_fd *)list->is)->i.fd == cl->i.fd)
+		if (((t_client *)list->is)->socket.fd == client->socket.fd)
 		{
-			(cl->inf->umode & USR_INVISIBL) ? ((t_chan *)chan->is)->invisibl-- :
+			(client->inf->umode & USR_INVISIBL) ? ((t_chan *)chan->is)->invisibl-- :
 				((t_chan *)chan->is)->nbusers--;
 			if (list->prev)
 				list->prev->next = list->next;
 			else
-				((t_chan *)cl->chans->is)->users = list->next;
+				((t_chan *)client->chans->is)->users = list->next;
 			if (list->next)
 				list->next->prev = list->prev;
 			free(list);
@@ -37,74 +38,75 @@ static void		sv_free_client_onchans(t_fd *cl, t_listin *chan)
 		}
 		list = list->next;
 	}
-	sv_free_client_onchans(cl, chan->next);
+	sv_free_client_onchans(client, chan->next);
 	ft_memset(chan, 0, sizeof(*chan));
 	free(chan);
 }
 
-static void		sv_free_client(t_fd *cl, t_env *e)
+static void		sv_free_client(t_client *client, t_server *server)
 {
-	if (!cl->inf->pass)
+	if (!client->inf->pass)
 	{
-		ft_free(&cl->inf->realname);
-		free(cl->inf);
-		cl->inf = NULL;
+		ft_free(&client->inf->realname);
+		free(client->inf);
+		client->inf = NULL;
 	}
-	if (cl->away)
-		free(cl->away);
-	if (cl->queue)
-		free(cl->queue);
-	if (cl->prev)
-		cl->prev->next = cl->next;
+	if (client->away)
+		free(client->away);
+	if (client->queue)
+		free(client->queue);
+	if (client->prev)
+		client->prev->next = client->next;
 	else
-		e->fds = cl->next;
-	if (cl->next)
-		cl->next->prev = cl->prev;
+		server->clients = client->next;
+	if (client->next)
+		client->next->prev = client->prev;
 }
 
-static void		sv_send_reason(t_fd *cl)
+static void		sv_send_reason(t_client *client)
 {
-	sv_cl_write("ERROR :Closing Link: ", cl);
-	sv_cl_write(cl->inf->nick, cl);
-	sv_cl_write("[~", cl);
-	sv_cl_write(cl->inf->username, cl);
-	sv_cl_write("@", cl);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, cl);
-	sv_cl_write("] (", cl);
-	sv_cl_write(cl->reason, cl);
-	if (cl->leaved == 2)
+	sv_cl_write("ERROR :Closing Link: ", client);
+	sv_cl_write(client->inf->nick, client);
+	sv_cl_write("[~", client);
+	sv_cl_write(client->inf->username, client);
+	sv_cl_write("@", client);
+	sv_cl_write((*client->socket.host) ? client->socket.host : client->socket.addr, client);
+	sv_cl_write("] (", client);
+	sv_cl_write(client->reason, client);
+	if (client->leaved == 2)
 	{
-		sv_cl_write("[~", cl);
-		sv_cl_write(cl->inf->username, cl);
-		sv_cl_write("]", cl);
+		sv_cl_write("[~", client);
+		sv_cl_write(client->inf->username, client);
+		sv_cl_write("]", client);
 	}
-	sv_cl_write(")", cl);
-	sv_cl_write(END_CHECK, cl);
-	cl->reason = NULL;
+	sv_cl_write(")", client);
+	sv_cl_write(END_CHECK, client);
+	client->reason = NULL;
 }
 
-t_fd			*sv_clear_client(t_env *e, t_fd *cl)
+t_client			*sv_clear_client(t_client *client, t_server *server)
 {
-	t_fd		*next;
+	t_client		*next;
 
-	next = cl->next;
-	if (cl->reason)
+	next = client->next;
+	if (client->reason)
 	{
-		if (e->verb)
-			printf("%s(%s):%s :%s\n", cl->i.addr, cl->i.host,
-					cl->i.port, cl->reason);
-		sv_send_reason(cl);
-		return (cl);
+		// if (server->verbose)
+		// 	printf("%s(%s):%s :%s\n", client->socket.addr, client->socket.host,
+		// 			client->socket.port, client->reason);
+		sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s(%s):%s :%s",
+			client->socket.addr, client->socket.host,
+			client->socket.port, client->reason);
+		sv_send_reason(client);
+		return (client);
 	}
-	FD_CLR(cl->i.fd, &e->fd_read);
-	FD_CLR(cl->i.fd, &e->fd_write);
-	if (cl->inf->registered > 0)
-		e->members--;
-	sv_free_client_onchans(cl, cl->chans);
-	sv_free_client(cl, e);
-	close(cl->i.fd);
-	ft_memset(cl, 0, sizeof(*cl));
-	free(cl);
-	cl = NULL;
+	if (client->inf->registered > 0)
+		server->members--;
+	sv_free_client_onchans(client, client->chans);
+	sv_free_client(client, server);
+	close(client->socket.fd);
+	ft_memset(client, 0, sizeof(*client));
+	free(client);
+	client = NULL;
 	return (next);
 }

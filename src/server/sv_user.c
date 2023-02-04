@@ -12,7 +12,7 @@
 
 #include "sv_main.h"
 
-static void			already_registered(t_fd *cl, t_env *e)
+static void			already_registered(t_client *cl, t_server *e)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -22,7 +22,7 @@ static void			already_registered(t_fd *cl, t_env *e)
 	sv_cl_write(END_CHECK, cl);
 }
 
-static void			missing_parameters(t_fd *cl, t_env *e)
+static void			missing_parameters(t_client *cl, t_server *e)
 {
 	sv_cl_write(":", cl);
 	sv_cl_write(e->name, cl);
@@ -30,7 +30,7 @@ static void			missing_parameters(t_fd *cl, t_env *e)
 	sv_cl_write(END_CHECK, cl);
 }
 
-void				sv_user(char **cmds, t_env *e, t_fd *cl)
+void				sv_user(char **cmds, t_server *e, t_client *cl)
 {
 	if (cl->inf->registered > 0)
 		return (already_registered(cl, e));

@@ -3,43 +3,43 @@
 /*                                                        :::      ::::::::   */
 /*   is_chan_member.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/23 12:05:46 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:18:54 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/10/21 13:53:21 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 
-int				is_chan_member(t_chan *ch, t_fd *cl)
+int				is_chan_member(t_chan *ch, t_client *client)
 {
-	t_listin	*l;
-	t_fd		*us;
+	t_listing	*list;
+	t_client	*user;
 
-	l = ch->users;
-	while (l)
+	list = ch->users;
+	while (list)
 	{
-		us = (t_fd *)l->is;
-		if (us->i.fd == cl->i.fd)
+		user = (t_client *)list->is;
+		if (user->socket.fd == client->socket.fd)
 			return (1);
-		l = l->next;
+		list = list->next;
 	}
 	return (0);
 }
 
-int				is_modo(t_chan *chan, t_fd *cl)
+int				is_modo(t_chan *chan, t_client *client)
 {
-	t_listin	*li;
-	t_fd		*us;
+	t_listing	*list;
+	t_client	*user;
 
-	li = chan->users;
-	while (li)
+	list = chan->users;
+	while (list)
 	{
-		us = (t_fd *)li->is;
-		if (us->i.fd == cl->i.fd)
-			return (li->mode & CHFL_CHANOP);
-		li = li->next;
+		user = (t_client *)list->is;
+		if (user->socket.fd == client->socket.fd)
+			return (list->mode & CHFL_CHANOP);
+		list = list->next;
 	}
 	return (0);
 }

@@ -6,96 +6,92 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 14:48:27 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:18:19 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/01 01:50:14 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sv_main.h"
 #include <sys/resource.h>
 #include <signal.h>
 #include <time.h>
+#include "sv_main.h"
 
-t_env		g_server;
+t_server	g_server;
 
-static void	ft_usage(char ill, char *prog_name)
+static int	parse_options_error(char illegal_option, char *prog_name, char *port)
 {
 	ft_putstr_fd(prog_name, 2);
-	if (ill)
+	if (illegal_option)
 	{
 		ft_putstr_fd(": Illegal option -- [", 2);
-		ft_putchar_fd(ill, 2);
+		ft_putchar_fd(illegal_option, 2);
 		ft_putstr_fd("]\n", 2);
 	}
-	else
+	else if (port == NULL)
 		ft_putstr_fd(": Missing parameter\n", 2);
+	else
+		ft_putstr_fd(": Too many parameters\n", 2);
+	return (1);
+}
+
+static void	usage(char *prog_name)
+{
 	ft_putstr_fd("Usage: ", 2);
 	ft_putstr_fd(prog_name, 2);
-	ft_putendl_fd(" [-v] <port>", 2);
-	ft_putstr_fd("\t-v\t\tInteractive server.\n", 2);
-	ft_putstr_fd("\t\t\tIt will print info about the server activity.\n", 2);
-	ft_putstr_fd("\t<port>\t\tThe port that will receive connections.\n", 2);
-	exit(EXIT_FAILURE);
+	ft_putendl_fd(" [-v] [-c conf_file] PORT", 2);
+	ft_putstr_fd("\t-v\t\tServer log level (default 0).\n", 2);
+	ft_putstr_fd("\t-c\t\tConfiguration file (default "CONF_FILE").\n", 2);
+	ft_putstr_fd("\tPORT\t\tPort for connections.\n", 2);
 }
 
-static void	get_opt(char **av, int *i, t_env *e)
+static int	parse_options(char *prog_name, char **args, t_server *server)
 {
-	int				j;
-
-	j = 1;
-	while (av[*i][j])
+	while (*args)
 	{
-		if (av[*i][j] == 'v')
-			e->verb = 1;
+		if (ft_strncmp((*args), "-v", 2) == 0)
+		{
+			if ((*args)[2] != '\0')
+				server->verbose = ft_atoi(&(*args)[2]);
+			else
+				server->verbose = ft_atoi((*++args));
+		}
+		else if (ft_strcmp((*args), "-c") == 0)
+			server->conf.conf_file = (*++args);
+		else if (ft_isdigit((*args)[0]) && !server->port)
+			server->port = (*args);
 		else
-			ft_usage(av[*i][j], av[0]);
-		j++;
+			return (parse_options_error(0, prog_name, server->port));
+		args++;
 	}
-}
-
-static void	sv_getopt(char **av, t_env *e)
-{
-	int				i;
-
-	i = 1;
-	e->verb = 0;
-	while (av[i])
-	{
-		if (av[i][0] == '-')
-			get_opt(av, &i, e);
-		else if (!*e->port)
-			ft_strncpy(e->port, av[i], PORT_LEN);
-		i++;
-	}
-	if (!*e->port)
-		ft_usage(0, av[0]);
-}
-
-static void	sv_init_env(t_env *e)
-{
-	struct rlimit	rlp;
-
-	if (getrlimit(RLIMIT_NOFILE, &rlp) == -1)
-		sv_error("ERROR: Getrlimit(RLIMIT_NOFILE)", e);
-	if (MAX_CLIENT > rlp.rlim_cur)
-		sv_error("MAX_CLIENT > rlim_cur. Check MAX_CLIENT and reduce it.", e);
-	ft_memset(&g_server.conf, 0, sizeof(e->conf));
-	get_conf_file(e);
-	ft_strcpy(e->userid, "1234AAAAA");
+	if (!server->port)
+		return (parse_options_error(0, prog_name, server->port));
+	return (0);
 }
 
 int			main(int ac, char **av)
 {
+	struct rlimit	rlp;
 	time_t			date;
+	int				ret;
 
-	if (ac < 2 || ac > 5)
-		ft_usage(0, av[0]);
+	(void)ac;
+	ret = 1;
+	errno = 0;
 	ft_memset(&g_server, 0, sizeof(g_server));
-	sv_getopt(av, &g_server);
-	sv_init_env(&g_server);
-	sv_init_server(&g_server);
-	sv_signals();
-	date = time(NULL);
-	g_server.creation = ctime(&date);
-	sv_loop(&g_server);
-	return (0);
+	g_server.conf.conf_file = CONF_FILE;
+	if (parse_options(av[0], &av[1], &g_server) != 0)
+		usage(av[0]);
+	else if (getrlimit(RLIMIT_NOFILE, &rlp) == -1)
+		sv_log(LOG_LEVEL_FATAL, LOG_TYPE_SYSTEM, "getrlimit: %s", strerror(errno));
+	else if (MAX_CLIENT > rlp.rlim_cur)
+		sv_log(LOG_LEVEL_FATAL, LOG_TYPE_SYSTEM, "MAX_CLIENT is greater than rlim_cur");
+	else if (sv_parse_conf_file(&g_server) == 0
+	&& sv_init_server(&g_server.v4, &g_server.v6, g_server.addr, g_server.port) == 0)
+	{
+		sv_signals();
+		date = time(NULL);
+		g_server.creation = ctime(&date);
+		ret = sv_loop(&g_server);
+	}
+	sv_close_server(&g_server);
+	return (ret);
 }

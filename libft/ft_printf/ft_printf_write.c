@@ -1,25 +1,19 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_puttab_fd.c                                     :+:      :+:    :+:   */
+/*   ft_printf_write.c                                  :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
 /*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2015/04/04 19:46:34 by gbourgeo          #+#    #+#             */
-/*   Updated: 2015/04/04 19:51:22 by gbourgeo         ###   ########.fr       */
+/*   Created: 2018/09/21 08:34:42 by gbourgeo          #+#    #+#             */
+/*   Updated: 2018/09/21 08:34:42 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "libft.h"
+#include <unistd.h>
+#include "ft_base_printf.h"
 
-void			ft_puttab_fd(char **tab, int fd)
+void		ft_printf_write(t_dt *data)
 {
-	int			i;
-
-	i = 0;
-	while (tab && tab[i])
-	{
-		ft_putendl_fd(tab[i], fd);
-		i++;
-	}
+	data->ret += write(STDOUT_FILENO, data->buff, data->pos);
 }

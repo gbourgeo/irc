@@ -12,9 +12,9 @@
 
 #include "sv_main.h"
 
-static void			modify_chan_nbusers(t_fd *cl)
+static void			modify_chan_nbusers(t_client *cl)
 {
-	t_listin		*ch;
+	t_listing		*ch;
 
 	ch = cl->chans;
 	while (ch)
@@ -25,7 +25,7 @@ static void			modify_chan_nbusers(t_fd *cl)
 	}
 }
 
-static void			change_user_mode(char c, char mode, t_fd *cl)
+static void			change_user_mode(char c, char mode, t_client *cl)
 {
 	static int		user_nbr[] = { US_MODS1, US_MODS2 };
 	char			*tmp;
@@ -44,7 +44,7 @@ static void			change_user_mode(char c, char mode, t_fd *cl)
 	sv_cl_write("!~", cl);
 	sv_cl_write(cl->inf->username, cl);
 	sv_cl_write("@", cl);
-	sv_cl_write((*cl->i.host) ? cl->i.host : cl->i.addr, cl);
+	sv_cl_write((*cl->socket.host) ? cl->socket.host : cl->socket.addr, cl);
 	sv_cl_write(" MODE ", cl);
 	sv_cl_write(cl->inf->nick, cl);
 	sv_cl_write((c) ? " :+" : " :-", cl);
@@ -54,7 +54,7 @@ static void			change_user_mode(char c, char mode, t_fd *cl)
 	sv_cl_write(END_CHECK, cl);
 }
 
-void				sv_user_mode(char **cmds, t_fd *cl)
+void				sv_user_mode(char **cmds, t_client *cl)
 {
 	char			*ptr;
 	char			c;

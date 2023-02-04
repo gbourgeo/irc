@@ -3,96 +3,102 @@
 /*                                                        :::      ::::::::   */
 /*   sv_leave_check.c                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/22 17:41:53 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:29:18 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/31 23:11:31 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
+#include "ft_snprintf.h"
 #include "sv_main.h"
 
-static void		rpl_leave(char **cmd, t_chan *ch, t_fd *to, t_fd *cl)
+static void	rpl_leave(char **leave_reason, t_chan *ch, t_client *to, t_client *cl)
 {
-	sv_cl_write(":", to);
-	sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->inf->nick, to);
-	sv_cl_write("!~", to);
-	sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->inf->username, to);
-	sv_cl_write("@", to);
-	if (*cl->i.host)
-		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->i.host, to);
+	char	msg[BUFF];
+
+	if (ch->cmode & CHFL_ANON)
+		ft_snprintf(msg,
+			sizeof(msg),
+			":anonymous!~anonymous@anonymous LEAVE %s",
+			ch->name);
 	else
-		sv_cl_write((ch->cmode & CHFL_ANON) ? "anonymous" : cl->i.addr, to);
-	sv_cl_write(" LEAVE ", to);
-	sv_cl_write(ch->name, to);
-	sv_cl_write(" :", to);
-	if (cmd && *cmd)
+		ft_snprintf(msg,
+			sizeof(msg),
+			":%s!~%s@%s LEAVE %s",
+			cl->inf->nick,
+			cl->inf->username,
+			(*cl->socket.host) ? cl->socket.host : cl->socket.addr,
+			ch->name);
+	if (leave_reason && *leave_reason)
 	{
-		sv_cl_write(*cmd, to);
-		while (*++cmd)
+		ft_strncat(msg, " :", sizeof(msg) - ft_strlen(msg));
+		ft_strncat(msg, *leave_reason, sizeof(msg) - ft_strlen(msg));
+		while (*++leave_reason)
 		{
-			sv_cl_write(" ", to);
-			sv_cl_write(*cmd, to);
+			ft_strncat(msg, " ", sizeof(msg) - ft_strlen(msg));
+			ft_strncat(msg, *leave_reason, sizeof(msg) - ft_strlen(msg));
 		}
 	}
-	sv_cl_write(END_CHECK, to);
+	ft_strncat(msg, END_CHECK, sizeof(msg) - ft_strlen(msg));
+	sv_cl_write(msg, to);
 }
 
-static void		sv_send_leavemsg(char **cmd, t_chan *chan, t_fd *cl)
+static void	sv_send_leavemsg(char **leave_reason, t_chan *chan, t_client *client)
 {
-	t_listin	*list;
-	t_fd		*to;
+	t_listing	*user;
 
-	list = chan->users;
-	while (list)
+	user = chan->users;
+	while (user)
 	{
-		to = (t_fd *)list->is;
-		if (!(chan->cmode & CHFL_QUIET) || to->i.fd == cl->i.fd)
-			rpl_leave(cmd, chan, to, cl);
-		list = list->next;
+		rpl_leave(leave_reason, chan, (t_client *)user->is, client);
+		user = user->next;
 	}
 }
 
-static void		sv_find_chaninuser(t_chan *chan, t_fd *cl)
+static void	sv_find_chaninuser(t_chan *chan, t_client *client)
 {
-	t_listin	*tmp;
+	t_listing	*channel;
 
-	tmp = cl->chans;
-	while (tmp && sv_strcmp(((t_chan *)tmp->is)->name, chan->name))
-		tmp = tmp->next;
-	if (tmp == NULL)
-		return (sv_err(ERR_NOTONCHANNEL, chan->name, NULL, cl));
-	if (tmp->prev)
-		tmp->prev->next = tmp->next;
+	channel = client->chans;
+	while (channel && sv_strcmp(((t_chan *)channel->is)->name, chan->name))
+		channel = channel->next;
+	if (channel == NULL)
+		return (sv_err(ERR_NOTONCHANNEL, client, chan->name));
+	if (channel->prev)
+		channel->prev->next = channel->next;
 	else
-		cl->chans = tmp->next;
-	if (tmp->next)
-		tmp->next->prev = tmp->prev;
-	tmp->is = NULL;
-	free(tmp);
-	tmp = NULL;
+		client->chans = channel->next;
+	if (channel->next)
+		channel->next->prev = channel->prev;
+	channel->is = NULL;
+	free(channel);
+	channel = NULL;
 }
 
-void			sv_find_userinchan(char **cmd, t_chan *chan, t_fd *cl)
+void		sv_find_userinchan(char **leave_reason, t_chan *chan, t_client *client)
 {
-	t_listin	*tmp;
+	t_listing	*user;
 
-	tmp = chan->users;
-	while (tmp && sv_strcmp(((t_fd *)tmp->is)->inf->nick, cl->inf->nick))
-		tmp = tmp->next;
-	if (tmp == NULL)
-		return (sv_err(ERR_NOTONCHANNEL, chan->name, NULL, cl));
-	(cl->inf->umode & USR_INVISIBL) ? chan->invisibl-- : chan->nbusers--;
-	cl->chansnb--;
-	sv_send_leavemsg(cmd, chan, cl);
-	if (tmp->prev)
-		tmp->prev->next = tmp->next;
+	user = chan->users;
+	while (user && sv_strcmp(((t_client *)user->is)->inf->nick, client->inf->nick))
+		user = user->next;
+	if (user == NULL)
+		return (sv_err(ERR_NOTONCHANNEL, client, chan->name));
+	(client->inf->umode & USR_INVISIBL) ? chan->invisibl-- : chan->nbusers--;
+	client->chansnb--;
+	if (!(chan->cmode & CHFL_QUIET))
+		sv_send_leavemsg(leave_reason, chan, client);
 	else
-		chan->users = tmp->next;
-	if (tmp->next)
-		tmp->next->prev = tmp->prev;
-	tmp->is = NULL;
-	free(tmp);
-	tmp = NULL;
-	sv_find_chaninuser(chan, cl);
+		rpl_leave(leave_reason, chan, client, client);
+	if (user->prev)
+		user->prev->next = user->next;
+	else
+		chan->users = user->next;
+	if (user->next)
+		user->next->prev = user->prev;
+	user->is = NULL;
+	free(user);
+	user = NULL;
+	sv_find_chaninuser(chan, client);
 }

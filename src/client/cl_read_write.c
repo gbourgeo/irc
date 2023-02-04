@@ -3,65 +3,143 @@
 /*                                                        :::      ::::::::   */
 /*   cl_read_write.c                                    :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/01 22:53:32 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/04 03:33:36 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/03 21:08:35 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "cl_main.h"
 #include <sys/socket.h>
+#include <unistd.h>
+#include "cl_main.h"
 
-static void			read_command(t_client *cl)
+static void	read_command(t_client *client)
 {
+	static t_cmd	cmds[] = { CONNECT, HELP, NICK, PASS, QUIT, USER, END };
+	char			cmd[BUFF];
 	char			**args;
 	int				i;
-	static t_cmd	cmd[] = { CONNECT, HELP, NICK, PASS, QUIT, USER, END };
 
 	i = 0;
-	if (*cl->read == '\n')
-		return ;
-	if ((args = ft_split_whitespaces(cl->read)) == NULL)
-		cl_error("Client: split failed\n", cl);
+	while (client->read.head != client->read.tail)
+	{
+		cmd[i++] = *client->read.head++;
+		if (client->read.head >= client->read.end)
+			client->read.head = client->read.start;
+	}
+	cmd[i - 1] = '\0';
+ft_putendl(cmd);
+	if ((args = ft_split_whitespaces(cmd)) == NULL)
+		return (cl_error("read_command: split_whitespaces", client));
 	if (*args && **args)
 	{
-		while (cmd[i].name && sv_strcmp(cmd[i].name, args[0]))
+		i = 0;
+		while (cmds[i].name && sv_strcmp(cmds[i].name, args[0]))
 			i++;
-		cmd[i].fct(args, cl);
+		cmds[i].fct(args, client);
 	}
 	ft_free(&args);
 }
 
-void				read_client(t_client *cl)
+void		read_client(t_client *client)
 {
-	int				ret;
+	int		ret;
 
-	ret = read(STDIN_FILENO, cl->read, BUFF);
+ft_putendl("READ !");
+	ret = read(STDIN_FILENO, client->read.tail, client->read.len);
 	if (ret < 0)
-		cl_error("Client: read() error.", cl);
+		return (cl_error("read_client: read", client));
 	if (ret == 0)
-		cl_error("Disconnected.", cl);
-	cl->read[ret] = '\0';
-	if (cl->sock == -1)
-		read_command(cl);
-	else if (send(cl->sock, cl->read, ret, 0) < 0)
-		cl_error("Client: send() error.", cl);
-	ft_strclr(cl->read);
+		return (cl_error("read_client: disconnected", client));
+	while (ret--)
+	{
+		ft_putnbr(*client->read.tail);
+		if (ft_isalnum(*client->read.tail)
+		|| *client->read.tail == '\n')
+		{
+			if (*client->read.tail == '\n')
+			{
+				write(STDOUT_FILENO, client->read.tail, 1);
+				if (client->sock == -1)
+					read_command(client);
+			}
+			else
+				write(STDOUT_FILENO, client->read.tail, 1);
+			if (client->read.len == 1)
+				break ;
+			if (++client->read.tail == client->read.end)
+				client->read.tail = client->read.start;
+			if (--client->read.len == 0)
+				client->read.len = BUFF;
+		}
+		else if (*client->read.tail == 3)
+			client->stop = true;
+	}
 }
 
-void				read_server(t_client *cl)
+void		write_client(t_client *client)
 {
-	int				ret;
+	int	ret;
+	int	bytes_write;
 
-	ret = recv(cl->sock, cl->write, BUFF, 0);
+	if (client->write.head < client->write.tail)
+	{
+		bytes_write = client->write.tail - client->write.head;
+		ret = write(STDOUT_FILENO, client->write.head, bytes_write);
+	}
+	else
+	{
+		bytes_write = client->write.tail - client->write.end;
+		ret = write(STDOUT_FILENO, client->write.head, bytes_write);
+	}
 	if (ret == -1)
-		cl_error("Client: read_server: recv() failed", cl);
+		return (cl_error("write_client: write", client));
+	client->write.head += ret;
+	client->write.len += ret;
+	if (client->write.head >= client->write.end)
+		client->write.head = client->write.start;
+}
+
+void		read_server(t_client *client)
+{
+	int	ret;
+
+	ret = recv(client->sock, client->write.tail, client->write.len, 0);
+	if (ret == -1)
+		return (cl_error("read_server: recv", client));
 	if (ret == 0)
 	{
-		ft_putendl("Connection closed by foreign host.");
-		close(cl->sock);
-		cl->sock = -1;
+		ft_putendl("read_server: Connection closed by foreign host");
+		close(client->sock);
+		client->sock = -1;
+		return ;
 	}
-	write(STDOUT_FILENO, cl->write, ret);
+	write(STDOUT_FILENO, client->write.tail, ret);
+}
+
+void	write_server(t_client *client)
+{
+	int	ret;
+	int	bytes_send;
+
+	if (client->read.head < client->read.tail)
+	{
+		bytes_send = client->read.tail - client->read.head;
+		ret = send(client->sock, client->read.head, bytes_send, 0);
+		client->read.head = client->read.tail;
+	}
+	else
+	{
+		bytes_send = client->read.end - client->read.head;
+		ret = send(client->sock, client->read.head, bytes_send, 0);
+		client->read.head = client->read.start;
+	}
+	if (ret < 0)
+		return (cl_error("write_server: send", client));
+	if (ret == 0)
+		ft_putendl("write_server: server disconnected");
+	else if (ret != bytes_send)
+		cl_error("write_server: sent less bytes than expected", client);
+	client->read.len += bytes_send;
 }

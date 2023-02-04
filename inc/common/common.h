@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   common.h                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/06/14 11:25:20 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/07 03:11:09 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/01/03 00:21:55 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -27,9 +27,9 @@
 
 /*
 ** ADDR_LEN		The length we can store a client address.
-**				Be aware my server handle ipv6.
+**				Be aware the server handle ipv6.
 */
-# define ADDR_LEN	1024
+# define ADDR_LEN	INET6_ADDRSTRLEN
 
 /*
 ** Default port number
@@ -46,21 +46,22 @@
 ** circular buffer.
 */
 
-typedef struct			s_buf
+typedef struct	s_buf
 {
-	char				*start;
-	char				*end;
-	char				*head;
-	char				*tail;
-	int					len;
-}						t_buf;
+	char	*start;
+	char	*end;
+	char	*head;
+	char	*tail;
+	int		len;
+}				t_buf;
 
-void					ft_free(char ***cmds);
-char					*ft_strtoupper(char *str);
-char					*ft_strtolower(char *str);
-int						ft_strisalnum(char *str);
-int						sv_strcmp(const char *s1, const char *s2);
-int						sv_strncmp(const char *s1, const char *s2, size_t n);
-char					**sv_strsplit(char *str, char c);
+void		ft_free(char ***cmds);
+char		*ft_strtoupper(char *str);
+char		*ft_strtolower(char *str);
+int			ft_strisalnum(char *str);
+int			sv_strcmp(const char *s1, const char *s2);
+int			sv_strncmp(const char *s1, const char *s2, size_t n);
+char		**sv_strsplit(char *str, char c);
+void		ft_init_ringbuf(t_buf *buffer, char *buff, int len);
 
 #endif

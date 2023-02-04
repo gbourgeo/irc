@@ -3,16 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   sv_cl_write.c                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/27 18:43:00 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/04/11 08:22:46 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/31 23:06:52 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 
-static void		check_queue(t_fd *cl)
+static void		check_queue(t_client *cl)
 {
 	char		*ptr;
 
@@ -41,7 +41,7 @@ static void		check_queue(t_fd *cl)
 	}
 }
 
-static void		move_head(ssize_t len, t_fd *cl)
+static void		move_head(ssize_t len, t_client *cl)
 {
 	cl->wr.len -= len;
 	if (cl->wr.head + len >= cl->wr.end)
@@ -53,7 +53,7 @@ static void		move_head(ssize_t len, t_fd *cl)
 		cl->wr.head += len;
 }
 
-void			sv_cl_send(t_fd *cl)
+void			sv_cl_send(t_client *cl)
 {
 	char		ptr[BUFF + 1];
 	ssize_t		ret;
@@ -68,14 +68,14 @@ void			sv_cl_send(t_fd *cl)
 		else
 			ft_strncpy(ptr, cl->wr.head, cl->wr.tail - cl->wr.head);
 		ptr[cl->wr.len] = 0;
-		if ((ret = send(cl->i.fd, ptr, cl->wr.len, 0)) <= 0)
+		if ((ret = send(cl->socket.fd, ptr, cl->wr.len, 0)) <= 0)
 			return ;
 		move_head(ret, cl);
 		check_queue(cl);
 	}
 }
 
-void			sv_cl_write(char *str, t_fd *cl)
+void			sv_cl_write(char *str, t_client *cl)
 {
 	char		*ptr;
 

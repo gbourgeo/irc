@@ -3,41 +3,44 @@
 /*                                                        :::      ::::::::   */
 /*   sv_leave.c                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/06 17:37:00 by gbourgeo          #+#    #+#             */
-/*   Updated: 2017/03/22 20:47:37 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/31 22:44:14 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-#include "sv_main.h"
 #include <sys/socket.h>
+#include "sv_main.h"
 
-static void		check_normal_channel(char *name, char **cmd, t_fd *cl, t_env *e)
+static void	check_normal_channel(
+	char *chan_name,
+	char **leave_reason,
+	t_client *client,
+	t_chan	*chan)
 {
-	t_chan		*chan;
-
-	chan = e->chans;
-	while (chan && sv_strcmp(name, chan->name))
+	while (chan && sv_strcmp(chan_name, chan->name) != 0)
 		chan = chan->next;
 	if (chan == NULL)
-		sv_err(ERR_NOSUCHCHANNEL, name, NULL, cl);
+		sv_err(ERR_NOSUCHCHANNEL, client, chan_name);
 	else
-		sv_find_userinchan(cmd, chan, cl);
+		sv_find_userinchan(leave_reason, chan, client);
 }
 
-static void		check_safe_channel(char *name, char **cmd, t_fd *cl, t_env *e)
+static void	check_safe_channel(
+	char *chan_name,
+	char **leave_reason,
+	t_client *client,
+	t_chan	*chan)
 {
-	t_chan		*chan;
-	t_chan		*found;
-	int			len;
+	t_chan	*found;
+	int		len;
 
 	found = NULL;
-	chan = e->chans;
 	while (chan)
 	{
 		len = ft_strlen(chan->name);
-		if (sv_strncmp(chan->name, name, len - 5) == chan->name[len - 5])
+		if (sv_strncmp(chan->name, chan_name, len - 5) == chan->name[len - 5])
 		{
 			if (found)
 				break ;
@@ -46,29 +49,36 @@ static void		check_safe_channel(char *name, char **cmd, t_fd *cl, t_env *e)
 		chan = chan->next;
 	}
 	if (found && chan)
-		sv_err(ERR_TOOMANYTARGETS, name, NULL, cl);
+		sv_err(ERR_TOOMANYTARGETS, client, chan_name);
 	else if (chan == NULL && found == NULL)
-		sv_err(ERR_NOSUCHCHANNEL, name, NULL, cl);
+		sv_err(ERR_NOSUCHCHANNEL, client, chan_name);
 	else
-		sv_find_userinchan(cmd, found, cl);
+		sv_find_userinchan(leave_reason, found, client);
 }
 
-void			sv_leave(char **cmds, t_env *e, t_fd *cl)
+/**
+ * @brief Leave channel(s) with a reason message (optionnal)
+ * 
+ * @param cmds List of channels to leave, plus reason message to send
+ * @param server Server
+ * @param client Client
+ */
+void		sv_leave(char **cmds, t_server *server, t_client *client)
 {
-	char		**list;
-	int			i;
+	char	**list;
+	int		i;
 
-	if (!cmds[0] || *cmds[0] == '\0')
-		return (sv_err(ERR_NEEDMOREPARAMS, "LEAVE", NULL, cl));
-	if ((list = ft_strsplit(cmds[0], ',')) == NULL)
-		sv_error("ERROR: SERVER: Out of memory", e);
 	i = 0;
+	if (!cmds[0] || *cmds[0] == '\0')
+		return (sv_err(ERR_NEEDMOREPARAMS, client, "LEAVE"));
+	if ((list = ft_strsplit(cmds[0], ',')) == NULL)
+		return (sv_error(LOG_LEVEL_FATAL, "Out of memory", server));
 	while (list[i])
 	{
 		if (*list[i] == '!')
-			check_safe_channel(list[i], cmds + 1, cl, e);
+			check_safe_channel(list[i], cmds + 1, client, server->chans);
 		else
-			check_normal_channel(list[i], cmds + 1, cl, e);
+			check_normal_channel(list[i], cmds + 1, client, server->chans);
 		i++;
 	}
 	ft_free(&list);

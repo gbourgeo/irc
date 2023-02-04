@@ -1,21 +1,22 @@
 /* ************************************************************************** */
 /*                                                                            */
 /*                                                        :::      ::::::::   */
-/*   ft_tablen.c                                        :+:      :+:    :+:   */
+/*   ft_vfprintf.h                                      :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: gbourgeo <marvin@42.fr>                    +#+  +:+       +#+        */
+/*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
-/*   Created: 2015/03/28 00:19:41 by gbourgeo          #+#    #+#             */
-/*   Updated: 2015/04/04 19:44:13 by gbourgeo         ###   ########.fr       */
+/*   Created: 2022/12/11 13:38:14 by gbourgeo          #+#    #+#             */
+/*   Updated: 2022/12/11 13:40:30 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
-int			ft_tablen(char **tab)
-{
-	int		i;
+#ifndef FT_VFPRINTF_H
+# define FT_VFPRINTF_H
 
-	i = 0;
-	while (tab && tab[i])
-		i++;
-	return (i);
-}
+# include <stdio.h>
+# include "ft_base_printf.h"
+
+int			ft_vfprintf(FILE *stream, const char *format, va_list ap);
+void		ft_vfprintf_write(t_dt *data);
+
+#endif

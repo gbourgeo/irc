@@ -13,7 +13,7 @@
 #include "sv_main.h"
 #include <time.h>
 
-void			sv_nick_change(t_fd *cl, t_env *e)
+void			sv_nick_change(t_client *cl, t_server *e)
 {
 	int			nb;
 	char		name[NICK_LEN + 1];
@@ -21,7 +21,7 @@ void			sv_nick_change(t_fd *cl, t_env *e)
 
 	if (time(NULL) - cl->inf->must_change_nick >= 30)
 	{
-		nb = cl->i.fd;
+		nb = cl->socket.fd;
 		ft_strncpy(name, "Guest-000", NICK_LEN + 1);
 		name[NICK_LEN - 1] += (nb % 10);
 		name[NICK_LEN - 2] += (nb / 10 % 10);

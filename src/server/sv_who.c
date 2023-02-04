@@ -12,10 +12,10 @@
 
 #include "sv_main.h"
 
-static int		have_common_chan(t_fd *to, t_fd *cl)
+static int		have_common_chan(t_client *to, t_client *cl)
 {
-	t_listin	*lo;
-	t_listin	*lc;
+	t_listing	*lo;
+	t_listing	*lc;
 
 	if (to->chans == NULL || cl->chans == NULL)
 		return (0);
@@ -34,25 +34,25 @@ static int		have_common_chan(t_fd *to, t_fd *cl)
 	return (0);
 }
 
-static void		sv_who_all(t_fd *cl, t_env *e)
+static void		sv_who_all(t_client *cl, t_server *e)
 {
-	t_fd		*all;
+	t_client		*all;
 
-	all = e->fds;
+	all = e->clients;
 	while (all)
 	{
-		if (!(all->inf->umode & USR_INVISIBL) || all->i.fd == cl->i.fd ||
+		if (!(all->inf->umode & USR_INVISIBL) || all->socket.fd == cl->socket.fd ||
 			have_common_chan(all, cl))
 			sv_who_info(all, cl, e);
 		all = all->next;
 	}
 }
 
-void			sv_who_chan(char **cmds, t_fd *cl, t_env *e)
+void			sv_who_chan(char **cmds, t_client *cl, t_server *e)
 {
 	t_chan		*chan;
-	t_listin	*list;
-	t_fd		*fd;
+	t_listing	*list;
+	t_client		*fd;
 
 	if (!(chan = find_chan(cmds[0], e->chans)) ||
 		((chan->cmode & CHFL_SECRET || chan->cmode & CHFL_PRIV) &&
@@ -61,8 +61,8 @@ void			sv_who_chan(char **cmds, t_fd *cl, t_env *e)
 	list = chan->users;
 	while (list)
 	{
-		fd = (t_fd *)list->is;
-		if ((!(chan->cmode & CHFL_ANON) || fd->i.fd == cl->i.fd) &&
+		fd = (t_client *)list->is;
+		if ((!(chan->cmode & CHFL_ANON) || fd->socket.fd == cl->socket.fd) &&
 			(!(fd->inf->umode & USR_INVISIBL) || have_common_chan(fd, cl)) &&
 			(!cmds[1] || ft_strcmp(cmds[1], "o") || list->mode & CHFL_CHANOP))
 			sv_who_info(fd, cl, e);
@@ -70,15 +70,15 @@ void			sv_who_chan(char **cmds, t_fd *cl, t_env *e)
 	}
 }
 
-static void		sv_who_user(char **cmds, t_fd *cl, t_env *e)
+static void		sv_who_user(char **cmds, t_client *cl, t_server *e)
 {
-	t_fd		*all;
+	t_client		*all;
 
-	all = e->fds;
+	all = e->clients;
 	while (all)
 	{
 		if ((!ft_strcmp(cmds[0], "0") ||
-			!sv_strncmp(all->i.addr, cmds[0], ADDR_LEN) ||
+			!sv_strncmp(all->socket.addr, cmds[0], ADDR_LEN) ||
 			!sv_tabcmp(all->inf->realname, cmds) ||
 			!sv_strncmp(all->inf->nick, cmds[0], NICK_LEN)) &&
 			(!(all->inf->umode & USR_INVISIBL) ||
@@ -90,7 +90,7 @@ static void		sv_who_user(char **cmds, t_fd *cl, t_env *e)
 	}
 }
 
-void			sv_who(char **cmds, t_env *e, t_fd *cl)
+void			sv_who(char **cmds, t_server *e, t_client *cl)
 {
 	if (!cmds[0] || !*cmds[0])
 		sv_who_all(cl, e);

@@ -6,92 +6,92 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/19 05:43:46 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/10/17 00:14:18 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2022/12/11 15:24:31 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "sv_main.h"
 
-static t_fd			*did_user_exist(char *nick, t_env *e)
+static t_client			*did_user_exist(char *nick, t_server *server)
 {
-	t_fd			*fd;
+	t_client			*clients;
 
-	fd = e->fds;
-	while (fd)
+	clients = server->clients;
+	while (clients)
 	{
-		if (!sv_strcmp(fd->inf->nick, nick))
+		if (!sv_strcmp(clients->inf->nick, nick))
 			break ;
-		fd = fd->next;
+		clients = clients->next;
 	}
-	return (fd);
+	return (clients);
 }
 
-static t_listin		*search_user(t_fd *us, t_chan *chan)
+static t_listing		*search_user(t_client *client, t_chan *channel)
 {
-	t_listin		*list;
+	t_listing		*clients;
 
-	list = chan->users;
-	while (list)
+	clients = channel->users;
+	while (clients)
 	{
-		if (((t_fd *)list->is)->i.fd == us->i.fd)
+		if (((t_client *)clients->is)->socket.fd == client->socket.fd)
 			break ;
-		list = list->next;
+		clients = clients->next;
 	}
-	return (list);
+	return (clients);
 }
 
-static t_listin		*search_channel(t_fd *us, t_chan *ch)
+static t_listing		*search_channel(t_client *client, t_chan *channel)
 {
-	t_listin		*list;
+	t_listing		*channels;
 
-	list = us->chans;
-	while (list)
+	channels = client->chans;
+	while (channels)
 	{
-		if (!sv_strcmp(((t_chan *)list->is)->name, ch->name))
+		if (!sv_strcmp(((t_chan *)channels->is)->name, channel->name))
 			break ;
-		list = list->next;
+		channels = channels->next;
 	}
-	return (list);
+	return (channels);
 }
 
-static void			sv_sendtochan(t_grp *grp, t_chan *chan, t_fd *cl)
+static void			sv_sendtochan(t_grp *group, t_chan *channel, t_client *client)
 {
-	t_listin		*users;
-	t_fd			*to;
+	t_listing		*users;
+	t_client			*to;
 
-	users = chan->users;
+	users = channel->users;
 	while (users)
 	{
-		to = (t_fd *)users->is;
-		rpl_umode(grp, chan, to, cl);
+		to = (t_client *)users->is;
+		rpl_umode(group, channel, to, client);
 		users = users->next;
 	}
 }
 
-void				sv_chan_user_mode(t_grp *grp, char ***cmd, t_env *e)
+void				sv_chan_user_mode(t_grp *group, char ***cmd, t_server *server)
 {
 	static int		chan_nbr[] = { CH_MODS1, CH_MODS2, CH_MODS3 };
-	t_listin		*ch;
+	t_listing		*ch;
 	char			*tmp;
 
 	if (*(*cmd + 1) == NULL)
 		return ;
-	tmp = ft_strchr(CHAN_MODES, *grp->ptr);
+	tmp = ft_strchr(CHAN_MODES, *group->ptr);
 	(*cmd)++;
-	if ((grp->to = did_user_exist(**cmd, e)) == NULL)
-		return (sv_err(ERR_NOSUCHNICK, **cmd, NULL, grp->from));
-	if ((grp->list = search_user(grp->to, grp->on)) == NULL)
-		return (sv_err(ERR_USERSDONTMATCH, **cmd, grp->on->name, grp->from));
-	ch = search_channel(grp->list->is, grp->on);
-	if (grp->c)
+	if ((group->to = did_user_exist(**cmd, server)) == NULL)
+		return (sv_err(ERR_NOSUCHNICK, group->from, **cmd));
+	if ((group->list = search_user(group->to, group->on)) == NULL)
+		return (sv_err(ERR_USERSDONTMATCH, group->from, **cmd, group->on->name));
+	ch = search_channel(group->list->is, group->on);
+	if (group->c)
 	{
-		grp->list->mode |= chan_nbr[tmp - CHAN_MODES];
+		group->list->mode |= chan_nbr[tmp - CHAN_MODES];
 		ch->mode |= chan_nbr[tmp - CHAN_MODES];
 	}
 	else
 	{
-		grp->list->mode &= ~(chan_nbr[tmp - CHAN_MODES]);
+		group->list->mode &= ~(chan_nbr[tmp - CHAN_MODES]);
 		ch->mode &= ~(chan_nbr[tmp - CHAN_MODES]);
 	}
-	sv_sendtochan(grp, grp->on, grp->from);
+	sv_sendtochan(group, group->on, group->from);
 }
