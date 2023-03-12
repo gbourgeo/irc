@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:46:47 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 20:02:33 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/03/12 15:36:21 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -15,6 +15,7 @@
 
 # include <stdbool.h>
 # include <termios.h>
+# include "err_list.h"
 # include "common.h"
 
 # define CONNECT	{ "CONNECT", cl_connect }
@@ -25,11 +26,20 @@
 # define USER		{ "USER", cl_user }
 # define END		{ NULL, cl_nosuchcommand }
 
-# define ERR_NEEDMOREPARAMS " :Not enough parameters."
+typedef enum	cl_log_e
+{
+	CL_LOG_DEBUG = 0,
+	CL_LOG_INFO = 1,
+	CL_LOG_WARNING = 2,
+	CL_LOG_ERROR = 3,
+	CL_LOG_FATAL = 4,
+}				cl_log_t;
+
+# define cl_log(log_level, error_str, client) cl_log_real(log_level, __FILE__, __LINE__, error_str, client)
 
 typedef struct		s_client
 {
-	struct termios	tattr;				/**< @briezf Terminal attributes */
+	struct termios	tattr;				/**< @brief Terminal attributes */
 	bool			stop;				/**< @brief Client loop breaker */
 	int				sock;				/**< @brief Server socket */
 	char			**user;				/**< @brief USER command save */
@@ -47,7 +57,9 @@ typedef struct		s_cmd
 	void			(*fct)(char **, t_client *);
 }					t_cmd;
 
-void				cl_error(const char *err, t_client *cl);
+const char			*cl_geterror(errnum_list_e errnum, t_client *client, ...);
+void				cl_log_real(cl_log_t log_level, const char *file, const int line,
+								const char *err, t_client *cl);
 int					cl_getaddrinfo(char *addr, char *port, t_client *cl);
 void				cl_loop(t_client *client);
 void				read_client(t_client *cl);

@@ -6,13 +6,16 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/02 03:00:44 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 20:57:14 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/03/12 15:39:35 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/socket.h>
 #include <unistd.h>
+#include "err_list.h"
 #include "cl_main.h"
+
+extern err_list_t g_err_list[];
 
 static int		cl_nick_check(char *nick)
 {
@@ -36,23 +39,21 @@ static int		cl_nick_check(char *nick)
 	return (2);
 }
 
-void			cl_nick(char **cmds, t_client *cl)
+void			cl_nick(char **cmds, t_client *client)
 {
 	int			err;
 
 	err = cl_nick_check(cmds[1]);
 	if (err == 1)
 	{
-		ft_putstr_fd(cmds[0], STDERR_FILENO);
-		ft_putendl_fd(" :No nickname given", STDERR_FILENO);
+		cl_log(CL_LOG_ERROR, cl_geterror(ERR_NONICKNAMEGIVEN, client, cmds[0]), client);
 	}
 	else if (err == 2)
 	{
-		ft_putstr_fd(cmds[1], STDERR_FILENO);
-		ft_putendl_fd(" :Erroneus nickname", STDERR_FILENO);
+		cl_log(CL_LOG_ERROR, cl_geterror(ERR_ERRONEUSNICKNAME, client, cmds[0]), client);
 	}
 	else
-		ft_strncpy(cl->nick, cmds[1], NICK_LEN);
+		ft_strncpy(client->nick, cmds[1], NICK_LEN);
 }
 
 void			cl_help(char **cmds, t_client *cl)
@@ -94,26 +95,23 @@ void			cl_quit(char **cmds, t_client *client)
 	ft_memset(client, 0, sizeof(*client));
 }
 
-void			cl_connect(char **cmds, t_client *cl)
+void			cl_connect(char **cmds, t_client *client)
 {
 	char		*port;
 
 	if (!cmds[1])
-	{
-		ft_putstr_fd(cmds[0], STDERR_FILENO);
-		return (ft_putendl_fd(ERR_NEEDMOREPARAMS, 2));
-	}
+		return (cl_log(CL_LOG_ERROR, cl_geterror(ERR_NEEDMOREPARAMS, client, cmds[0]), client));
 	port = (cmds[2]) ? cmds[2] : ft_strrchr(cmds[1], ':');
 	if (port && !cmds[2])
 		*port++ = 0;
 	if (port == NULL || *port == 0)
 		port = DEF_PORT;
-	if (cl_getaddrinfo(cmds[1], port, cl))
+	if (cl_getaddrinfo(cmds[1], port, client))
 		return ;
-	if (cl->pass && sleep(1))
-		cl_send(cl->sock, "PASS ", cl->pass, NULL);
-	if (*cl->nick && sleep(1))
-		cl_send(cl->sock, "NICK ", cl->nick, NULL);
-	if (cl->user && sleep(1))
-		cl_send(cl->sock, "USER ", *cl->user, cl->user);
+	if (client->pass && sleep(1))
+		cl_send(client->sock, "PASS ", client->pass, NULL);
+	if (*client->nick && sleep(1))
+		cl_send(client->sock, "NICK ", client->nick, NULL);
+	if (client->user && sleep(1))
+		cl_send(client->sock, "USER ", *client->user, client->user);
 }

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/01 22:53:32 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 21:08:35 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/03/12 15:45:13 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,10 +28,9 @@ static void	read_command(t_client *client)
 		if (client->read.head >= client->read.end)
 			client->read.head = client->read.start;
 	}
-	cmd[i - 1] = '\0';
-ft_putendl(cmd);
+	cmd[i] = '\0';
 	if ((args = ft_split_whitespaces(cmd)) == NULL)
-		return (cl_error("read_command: split_whitespaces", client));
+		return (cl_log(CL_LOG_FATAL, "malloc failed", client));
 	if (*args && **args)
 	{
 		i = 0;
@@ -46,35 +45,37 @@ void		read_client(t_client *client)
 {
 	int		ret;
 
-ft_putendl("READ !");
 	ret = read(STDIN_FILENO, client->read.tail, client->read.len);
 	if (ret < 0)
-		return (cl_error("read_client: read", client));
+		return (cl_log(CL_LOG_ERROR, "read", client));
 	if (ret == 0)
-		return (cl_error("read_client: disconnected", client));
+		return (cl_log(CL_LOG_FATAL, "client quit", client));
 	while (ret--)
 	{
-		ft_putnbr(*client->read.tail);
 		if (ft_isalnum(*client->read.tail)
+		|| *client->read.tail == ' '
 		|| *client->read.tail == '\n')
 		{
+			write(STDOUT_FILENO, client->read.tail, 1);
 			if (*client->read.tail == '\n')
 			{
-				write(STDOUT_FILENO, client->read.tail, 1);
-				if (client->sock == -1)
+				if (client->read.len != BUFF)
 					read_command(client);
+				write(STDOUT_FILENO, "> ", 2);
 			}
-			else
-				write(STDOUT_FILENO, client->read.tail, 1);
-			if (client->read.len == 1)
-				break ;
 			if (++client->read.tail == client->read.end)
 				client->read.tail = client->read.start;
 			if (--client->read.len == 0)
 				client->read.len = BUFF;
 		}
 		else if (*client->read.tail == 3)
-			client->stop = true;
+		{
+			client->read.head = client->read.tail;
+			client->read.len = BUFF;
+			write(STDOUT_FILENO, "\n> ", 3);
+		}
+		else if (*client->read.tail == 4)
+			cl_log(CL_LOG_FATAL, "client quit", client);
 	}
 }
 
@@ -94,7 +95,7 @@ void		write_client(t_client *client)
 		ret = write(STDOUT_FILENO, client->write.head, bytes_write);
 	}
 	if (ret == -1)
-		return (cl_error("write_client: write", client));
+		return (cl_log(CL_LOG_ERROR, "write", client));
 	client->write.head += ret;
 	client->write.len += ret;
 	if (client->write.head >= client->write.end)
@@ -107,10 +108,10 @@ void		read_server(t_client *client)
 
 	ret = recv(client->sock, client->write.tail, client->write.len, 0);
 	if (ret == -1)
-		return (cl_error("read_server: recv", client));
+		return (cl_log(CL_LOG_ERROR, "recv", client));
 	if (ret == 0)
 	{
-		ft_putendl("read_server: Connection closed by foreign host");
+		cl_log(CL_LOG_INFO, "Connection closed by foreign host", client);
 		close(client->sock);
 		client->sock = -1;
 		return ;
@@ -136,10 +137,10 @@ void	write_server(t_client *client)
 		client->read.head = client->read.start;
 	}
 	if (ret < 0)
-		return (cl_error("write_server: send", client));
+		return (cl_log(CL_LOG_ERROR, "send", client));
 	if (ret == 0)
-		ft_putendl("write_server: server disconnected");
+		return (cl_log(CL_LOG_INFO, "Connection closed by foreign host", client));
 	else if (ret != bytes_send)
-		cl_error("write_server: sent less bytes than expected", client);
+		cl_log(CL_LOG_WARNING, "sent less bytes than expected", client);
 	client->read.len += bytes_send;
 }

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:37:59 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 21:18:16 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/03/12 14:43:44 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,10 +33,11 @@ static void		cl_init(void)
 	}
 	tcgetattr(STDIN_FILENO, &g_client.tattr);
 	tcgetattr(STDIN_FILENO, &tattr);
-	tattr.c_cflag &= ~(ICANON | ECHO);
+	tattr.c_lflag &= ~(ICANON | ECHO | ISIG);
 	tattr.c_cc[VMIN] = 1;
 	tattr.c_cc[VTIME] = 0;
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &tattr);
+	tcsetattr(STDIN_FILENO, TCSANOW, &tattr);
+	signal(SIGINT, SIG_IGN);
 }
 
 int				main(int ac, char **av)
@@ -48,18 +49,16 @@ int				main(int ac, char **av)
 	ft_putendl("*****************************");
 	ft_putendl("* Welcome to GBO-IRC client *");
 	ft_putendl("*****************************");
-	// signal(SIGINT, SIG_IGN);
 	cl_init();
 	if (!av[1])
 		ft_putendl("\e[34mUsage: ./client [host_name[:port]] [port]\e[0m");
 	else if (av[2])
 		port = av[2];
 	else if ((port = ft_strrchr(av[1], ':')) != NULL)
-		*port++ = 0;
+		*port++ = '\0';
 	if (av[1])
 		cl_getaddrinfo(av[1], port, &g_client);
 	cl_loop(&g_client);
 	cl_quit(NULL, &g_client);
-	ft_putendl("Client quit.");
 	return (0);
 }

@@ -6,7 +6,7 @@
 #    By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/05/12 14:11:41 by gbourgeo          #+#    #+#              #
-#    Updated: 2023/01/03 20:53:11 by gbourgeo         ###   ########.fr        #
+#    Updated: 2023/03/12 15:35:27 by gbourgeo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -16,11 +16,12 @@ CL_H	= cl_main.h
 CL_DIR	= src/client/
 CL_SRC	= cl_main.c				\
 		cl_getaddrinfo.c		\
+		cl_geterror.c			\
 		cl_loop.c				\
 		cl_read_write.c			\
 		cl_commands.c			\
 		cl_commands_next.c		\
-		cl_error.c				\
+		cl_log.c				\
 		cl_send.c				\
 
 SERVEUR	= server
