@@ -6,7 +6,7 @@
 #    By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/05/12 14:11:41 by gbourgeo          #+#    #+#              #
-#    Updated: 2023/03/12 15:35:27 by gbourgeo         ###   ########.fr        #
+#    Updated: 2023/06/10 14:10:37 by gbourgeo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,6 +18,8 @@ CL_SRC	= cl_main.c				\
 		cl_getaddrinfo.c		\
 		cl_geterror.c			\
 		cl_loop.c				\
+		cl_ncurses.c			\
+		cl_ncurses_read.c		\
 		cl_read_write.c			\
 		cl_commands.c			\
 		cl_commands_next.c		\
@@ -85,6 +87,7 @@ COM_H 	= common.h err_list.h help.h commands.h flags.h
 COM_DIR	= src/common/
 COM_SRC	= ft_free.c			\
 		ft_init_ringbuff.c	\
+		ft_move_ringbuff.c	\
 		ft_strisalnum.c		\
 		ft_strtoupper.c		\
 		ft_strtolower.c		\
@@ -113,7 +116,7 @@ $(OBJ_DIR):
 
 $(CLIENT): $(OBJ_CL) $(OBJ_COM)
 	@make --quiet -C $(LIB_DIR)
-	@$(WWW) -o $@ $^ -L $(LIB_DIR) -lft
+	@$(WWW) -o $@ $^ -L $(LIB_DIR) -lft -lncurses
 	@echo CREATED: $@
 
 $(SERVEUR): $(OBJ_SV) $(OBJ_COM)

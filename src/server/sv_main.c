@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 14:48:27 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/01 01:50:14 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/03 11:17:44 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -38,9 +38,9 @@ static void	usage(char *prog_name)
 	ft_putstr_fd("Usage: ", 2);
 	ft_putstr_fd(prog_name, 2);
 	ft_putendl_fd(" [-v] [-c conf_file] PORT", 2);
-	ft_putstr_fd("\t-v\t\tServer log level (default 0).\n", 2);
-	ft_putstr_fd("\t-c\t\tConfiguration file (default "CONF_FILE").\n", 2);
-	ft_putstr_fd("\tPORT\t\tPort for connections.\n", 2);
+	ft_putendl_fd("\t-v\t\tServer log level (default 0).", 2);
+	ft_putendl_fd("\t-c\t\tConfiguration file (default "CONF_FILE").", 2);
+	ft_putendl_fd("\tPORT\t\tPort for incoming connections (default "DEF_PORT").", 2);
 }
 
 static int	parse_options(char *prog_name, char **args, t_server *server)
@@ -63,7 +63,7 @@ static int	parse_options(char *prog_name, char **args, t_server *server)
 		args++;
 	}
 	if (!server->port)
-		return (parse_options_error(0, prog_name, server->port));
+		server->port = DEF_PORT;
 	return (0);
 }
 

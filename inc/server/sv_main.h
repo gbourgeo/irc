@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 14:49:14 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/01 02:40:20 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/05/29 15:42:46 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -113,6 +113,7 @@ typedef enum
 	LOG_TYPE_SYSTEM = 0,
 	LOG_TYPE_CONF,
 	LOG_TYPE_SERVER,
+	LOG_TYPE_CLIENT,
 }	e_log_type;
 
 /**
@@ -175,8 +176,6 @@ typedef struct			s_client_info
 	void				(*fct_write)();			/* Function to send client response */
 	t_buf				rd;						/* Ringbuffer for reading */
 	t_buf				wr;						/* Ringbuffer for writing */
-	char				buf_read[BUFF + 1];		/* Buffer for reading */
-	char				buf_write[BUFF + 1];	/* Buffer for writing */
 	char				*queue;
 	int					leaved;					/* Says if the client has leaved and need to be deleted from the server */
 	char				*reason;				/* The reason he left the server */

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:46:47 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/03/12 15:36:21 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:10:13 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 # define CL_MAIN_H
 
 # include <stdbool.h>
-# include <termios.h>
+# include <ncurses.h>
 # include "err_list.h"
 # include "common.h"
 
@@ -37,18 +37,40 @@ typedef enum	cl_log_e
 
 # define cl_log(log_level, error_str, client) cl_log_real(log_level, __FILE__, __LINE__, error_str, client)
 
+/*
+** Ncurses related enum and structure
+*/
+enum
+{
+	CLIENT_TITLE_COLOR = 8,
+	CL_PURPLE,
+	CL_WHITE,
+	CL_YELLOW,
+	CL_RED,
+	CL_LIGHT_BLUE,
+	CL_WEIRD,
+};
+
+typedef struct		s_windows
+{
+	WINDOW			*main;		/**< @brief Main ncurse window */
+	WINDOW			*chatbox;	/**< @brief Output box */
+	WINDOW			*chatwin;	/**< @brief Output window */
+	WINDOW			*textbox;	/**< @brief Input text box */
+	WINDOW			*textwin;	/**< @brief Input text window */
+	char			*ptr;		/**< @brief Position Pointer of the input ringbuffer */
+} t_windows;
 typedef struct		s_client
 {
-	struct termios	tattr;				/**< @brief Terminal attributes */
+	// struct termios	tattr;				/**< @brief Terminal attributes */
+	t_windows		windows;
 	bool			stop;				/**< @brief Client loop breaker */
 	int				sock;				/**< @brief Server socket */
 	char			**user;				/**< @brief USER command save */
 	char			*pass;				/**< @brief PASS command save */
 	char			nick[NICK_LEN + 1];	/**< @brief NICK command save */
-	t_buf			read;				/**< @brief Input ringbuffer */
-	char			rd[BUFF];			/**< @brief Input buffer */
-	t_buf			write;				/**< @brief Output ringbuffer */
-	char			wr[BUFF];			/**< @brief Output buffer */
+	t_buf			read;				/**< @brief Input ringbuffer. Read from client, write to server */
+	t_buf			write;				/**< @brief Output ringbuffer. Read from server, write to client */
 }					t_client;
 
 typedef struct		s_cmd
@@ -57,15 +79,26 @@ typedef struct		s_cmd
 	void			(*fct)(char **, t_client *);
 }					t_cmd;
 
+int					create_ncurses_chat(t_client *client);
+int					create_ncurses_text(t_client *client);
+int					cl_default(int ret, t_client *client);
+int					cl_ctrl_c(__attribute__((unused)) int ret, t_client *client);
+int					cl_ctrl_d(__attribute__((unused)) int ret, t_client *client);
+int					cl_lf(__attribute__((unused)) int ret, t_client *client);
+int					cl_backspace(__attribute__((unused)) int ret, t_client *client);
+int					cl_key_dc(__attribute__((unused)) int ret, t_client *client);
+int					cl_key_left(__attribute__((unused)) int ret, t_client *client);
+int					cl_key_right(__attribute__((unused)) int ret, t_client *client);
+
 const char			*cl_geterror(errnum_list_e errnum, t_client *client, ...);
 void				cl_log_real(cl_log_t log_level, const char *file, const int line,
-								const char *err, t_client *cl);
-int					cl_getaddrinfo(char *addr, char *port, t_client *cl);
+								const char *err, t_client *client);
+int					cl_getaddrinfo(char **argv, t_client *client);
 void				cl_loop(t_client *client);
-void				read_client(t_client *cl);
-void				read_server(t_client *cl);
-void				write_client(t_client *client);
-void				write_server(t_client *client);
+int					read_client_input(t_client *client);
+void				read_from_server(t_client *client);
+void				write_to_client(t_client *client);
+void				write_to_server(t_client *client);
 
 int					cl_get(t_client *cl);
 int					cl_put(t_client *cl);

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/21 17:16:50 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/12/11 14:25:52 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/03 18:29:01 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -92,8 +92,7 @@ int				sv_accept_v4(t_server *server)
 	if (getsockname(socket.fd, &socket.csin, &len))
 		sv_send_info(socket.fd, server->name, "Couldn't retreive your ident");
 	sv_send_info(socket.fd, server->name, "Looking up your hostname...");
-	if (getnameinfo(&socket.csin, sizeof(socket.csin), socket.host, NI_MAXHOST,
-	socket.port, NI_MAXSERV, NI_NUMERICSERV))
+	if (getnameinfo(&socket.csin, sizeof(socket.csin), socket.host, NI_MAXHOST, socket.port, NI_MAXSERV, NI_NUMERICSERV))
 		sv_send_info(socket.fd, server->name, "Couldn't look up your hostname");
 	inet_ntop(AF_INET, V4_ADDR(socket.csin), socket.addr, sizeof(socket.addr));
 	if (server->members + 1 >= MAX_CLIENT)

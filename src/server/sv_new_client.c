@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/07/26 17:26:04 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 00:21:07 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/05/29 13:39:37 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -69,8 +69,8 @@ int				sv_new_client(t_socket *socket, t_client **clients)
 	cl->type = FD_CLIENT;
 	cl->fct_read = sv_cl_read;
 	cl->fct_write = sv_cl_send;
-	ft_init_ringbuf(&cl->rd, cl->buf_read, BUFF);
-	ft_init_ringbuf(&cl->wr, cl->buf_write, 0);
+	ft_init_ringbuf(&cl->rd);
+	ft_init_ringbuf(&cl->wr);
 	if (*clients != NULL)
 		(*clients)->prev = cl;
 	cl->next = *clients;

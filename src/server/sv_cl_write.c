@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/27 18:43:00 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/12/31 23:06:52 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/03 18:25:34 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,7 @@ static void		check_queue(t_client *cl)
 {
 	char		*ptr;
 
-	if (!(ptr = cl->queue) || cl->wr.len == BUFF)
+	if (!(ptr = cl->queue))
 		return ;
 	while (*ptr)
 	{
@@ -41,58 +41,60 @@ static void		check_queue(t_client *cl)
 	}
 }
 
-static void		move_head(ssize_t len, t_client *cl)
+/**
+ * @brief Fonction d'envoi au client
+ * 
+ * @param client Structure du client
+ */
+void			sv_cl_send(t_client *client)
 {
-	cl->wr.len -= len;
-	if (cl->wr.head + len >= cl->wr.end)
-	{
-		len = len - (cl->wr.end - cl->wr.head);
-		cl->wr.head = cl->wr.start + len;
-	}
-	else
-		cl->wr.head += len;
-}
-
-void			sv_cl_send(t_client *cl)
-{
-	char		ptr[BUFF + 1];
 	ssize_t		ret;
 
-	if (cl->wr.len > 0)
+	if (client->wr.len <= 0)
+		check_queue(client);
+	if (client->wr.len <= 0)
+		return ;
+	if (client->wr.tail <= client->wr.head)
+		ret = send(client->socket.fd, client->wr.head, client->wr.end - client->wr.head, MSG_DONTWAIT | MSG_NOSIGNAL);
+	else
+		ret = send(client->socket.fd, client->wr.head, client->wr.tail - client->wr.head, MSG_DONTWAIT | MSG_NOSIGNAL);
+	char buf[BUFF + 1];
+	if (client->wr.tail <= client->wr.head)
 	{
-		if (cl->wr.tail <= cl->wr.head)
-		{
-			ft_strcpy(ptr, cl->wr.head);
-			ft_strncat(ptr, cl->wr.start, cl->wr.tail - cl->wr.start);
-		}
-		else
-			ft_strncpy(ptr, cl->wr.head, cl->wr.tail - cl->wr.head);
-		ptr[cl->wr.len] = 0;
-		if ((ret = send(cl->socket.fd, ptr, cl->wr.len, 0)) <= 0)
-			return ;
-		move_head(ret, cl);
-		check_queue(cl);
+		ft_strncpy(buf, client->wr.head, client->wr.end - client->wr.head);
+		buf[client->wr.end - client->wr.head] = 0;
 	}
+	else
+	{
+		ft_strncpy(buf, client->wr.head, client->wr.tail - client->wr.head);
+		buf[client->wr.tail - client->wr.head] = 0;
+	}
+	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Send: %s", client->uid, buf);
+	ft_move_head(ret, &client->wr);
+	// Cas d'erreur ??
 }
 
-void			sv_cl_write(char *str, t_client *cl)
+/**
+ * @brief Fonction d'écriture dans le ringbuffer du client
+ * 
+ * @param str Chaîne de caractères à copier
+ * @param client Structure du client
+ */
+void			sv_cl_write(char *str, t_client *client)
 {
 	char		*ptr;
 
 	while (str && *str)
 	{
-		if (cl->wr.len == BUFF)
+		if (client->wr.len == BUFF)
 		{
-			ptr = cl->queue;
-			cl->queue = ft_strjoin(ptr, str);
+			ptr = client->queue;
+			client->queue = ft_strjoin(ptr, str);
 			free(ptr);
 			break ;
 		}
-		*cl->wr.tail = *str;
-		cl->wr.tail++;
-		if (cl->wr.tail == cl->wr.end)
-			cl->wr.tail = cl->wr.start;
-		cl->wr.len++;
+		*client->wr.tail = *str;
+		ft_move_tail(1, &client->wr);
 		str++;
 	}
 }

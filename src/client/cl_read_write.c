@@ -6,141 +6,144 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/01 22:53:32 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/03/12 15:45:13 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:14:51 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <sys/socket.h>
 #include <unistd.h>
+#include <errno.h>
 #include "cl_main.h"
 
-static void	read_command(t_client *client)
+/**
+ * @brief Fonction de lecture de l'entrée standart du client.
+ * 
+ * @param client Structure principale du client
+ */
+int			read_client_input(t_client *client)
 {
-	static t_cmd	cmds[] = { CONNECT, HELP, NICK, PASS, QUIT, USER, END };
-	char			cmd[BUFF];
-	char			**args;
-	int				i;
+	static struct {
+		int	value;
+		int	(*hdlr)(int, t_client *);
+	} s_character[] = {
+		{ 3, cl_ctrl_c }, { 4, cl_ctrl_d }, { 10, cl_lf },
+		{ KEY_BACKSPACE, cl_backspace }, { KEY_DC, cl_key_dc },
+		// { KEY_UP, cl_key_up }, { KEY_DOWN, cl_key_down },
+		{ KEY_LEFT, cl_key_left }, { KEY_RIGHT, cl_key_right },
+	};
+	unsigned long	i;
+	int				ret;
 
-	i = 0;
-	while (client->read.head != client->read.tail)
-	{
-		cmd[i++] = *client->read.head++;
-		if (client->read.head >= client->read.end)
-			client->read.head = client->read.start;
-	}
-	cmd[i] = '\0';
-	if ((args = ft_split_whitespaces(cmd)) == NULL)
-		return (cl_log(CL_LOG_FATAL, "malloc failed", client));
-	if (*args && **args)
-	{
-		i = 0;
-		while (cmds[i].name && sv_strcmp(cmds[i].name, args[0]))
-			i++;
-		cmds[i].fct(args, client);
-	}
-	ft_free(&args);
-}
-
-void		read_client(t_client *client)
-{
-	int		ret;
-
-	ret = read(STDIN_FILENO, client->read.tail, client->read.len);
-	if (ret < 0)
-		return (cl_log(CL_LOG_ERROR, "read", client));
-	if (ret == 0)
-		return (cl_log(CL_LOG_FATAL, "client quit", client));
-	while (ret--)
-	{
-		if (ft_isalnum(*client->read.tail)
-		|| *client->read.tail == ' '
-		|| *client->read.tail == '\n')
-		{
-			write(STDOUT_FILENO, client->read.tail, 1);
-			if (*client->read.tail == '\n')
-			{
-				if (client->read.len != BUFF)
-					read_command(client);
-				write(STDOUT_FILENO, "> ", 2);
-			}
-			if (++client->read.tail == client->read.end)
-				client->read.tail = client->read.start;
-			if (--client->read.len == 0)
-				client->read.len = BUFF;
-		}
-		else if (*client->read.tail == 3)
-		{
-			client->read.head = client->read.tail;
-			client->read.len = BUFF;
-			write(STDOUT_FILENO, "\n> ", 3);
-		}
-		else if (*client->read.tail == 4)
-			cl_log(CL_LOG_FATAL, "client quit", client);
-	}
-}
-
-void		write_client(t_client *client)
-{
-	int	ret;
-	int	bytes_write;
-
-	if (client->write.head < client->write.tail)
-	{
-		bytes_write = client->write.tail - client->write.head;
-		ret = write(STDOUT_FILENO, client->write.head, bytes_write);
-	}
+	ret = wgetch(client->windows.textwin);
+	if (ret == ERR)
+		cl_log(CL_LOG_ERROR, "read", client);
+	else if (ret == 0)
+		cl_log(CL_LOG_FATAL, "client quit", client);
 	else
 	{
-		bytes_write = client->write.tail - client->write.end;
-		ret = write(STDOUT_FILENO, client->write.head, bytes_write);
+		i = 0;
+		while (i < sizeof(s_character) / sizeof(s_character[0]))
+		{
+			if (ret == s_character[i].value)
+				return (s_character[i].hdlr(ret, client));
+			i++;
+		}
+		return (cl_default(ret, client));
 	}
-	if (ret == -1)
-		return (cl_log(CL_LOG_ERROR, "write", client));
-	client->write.head += ret;
-	client->write.len += ret;
-	if (client->write.head >= client->write.end)
-		client->write.head = client->write.start;
+	return (ret);
 }
 
-void		read_server(t_client *client)
+/**
+ * @brief Fonction d'écriture sur la socket du serveur.
+ * 
+ * Principe du buffer tournant : (H=head, T=tail)
+ * 		| | | |H| | | | |T| | | |
+ * 		       ---------> bytes_send
+ *
+ * 		| | | |T| | | | |H| | | |
+ * 		                 ------> bytes_send (first)
+ * 		| | | |T| | | | |H| | | |
+ * 		-------> bytes_send (second)
+ * 
+ * @param client Structure principale du client
+ */
+void	write_to_server(t_client *client)
 {
 	int	ret;
+	int	send_b;
 
-	ret = recv(client->sock, client->write.tail, client->write.len, 0);
-	if (ret == -1)
-		return (cl_log(CL_LOG_ERROR, "recv", client));
+	if (client->read.head < client->read.tail)
+		send_b = client->read.tail - client->read.head;
+	else
+		send_b = client->read.end - client->read.head;
+	if (send_b == 0)
+		return ;
+	ret = send(client->sock, client->read.head, send_b, MSG_DONTWAIT | MSG_NOSIGNAL);
+	if (ret < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
+	{
+		cl_log(CL_LOG_ERROR, "send", client);
+		close(client->sock);
+		client->sock = -1;
+	}
 	if (ret == 0)
 	{
 		cl_log(CL_LOG_INFO, "Connection closed by foreign host", client);
 		close(client->sock);
 		client->sock = -1;
-		return ;
 	}
-	write(STDOUT_FILENO, client->write.tail, ret);
+	else if (ret != send_b)
+		cl_log(CL_LOG_WARNING, "sent less bytes than expected", client);
+	ft_move_head(ret, &client->read);
 }
 
-void	write_server(t_client *client)
+/**
+ * @brief Fonction de lecture sur la socket du serveur.
+ * 
+ * @param client Structure principale du client
+ */
+void		read_from_server(t_client *client)
 {
-	int	ret;
-	int	bytes_send;
+	ssize_t	ret;
+	int		read_b;
 
-	if (client->read.head < client->read.tail)
+	read_b = client->write.end - client->write.tail;
+	if (read_b == 0 || client->write.len >= BUFF)
+		return ;
+	ret = recv(client->sock, client->write.tail, read_b, MSG_DONTWAIT | MSG_NOSIGNAL);
+	if (ret < 0 && errno != EAGAIN && errno != EWOULDBLOCK)
 	{
-		bytes_send = client->read.tail - client->read.head;
-		ret = send(client->sock, client->read.head, bytes_send, 0);
-		client->read.head = client->read.tail;
+		cl_log(CL_LOG_ERROR, "recv", client);
+		close(client->sock);
+		client->sock = -1;
 	}
+	else if (ret == 0)
+	{
+		cl_log(CL_LOG_INFO, "Connection closed by foreign host", client);
+		close(client->sock);
+		client->sock = -1;
+	}
+	ft_move_tail(ret, &client->write);
+}
+
+/**
+ * @brief Fonction d'écriture sur la sortie standart les données
+ * reçues du serveur.
+ *
+ * @param client Structure principale du client
+ */
+void		write_to_client(t_client *client)
+{
+	ssize_t	ret;
+	int		write_b;
+
+	if (client->write.len == 0)
+		return ;
+	if (client->write.tail <= client->write.head)
+		write_b = client->write.end - client->write.head;
 	else
-	{
-		bytes_send = client->read.end - client->read.head;
-		ret = send(client->sock, client->read.head, bytes_send, 0);
-		client->read.head = client->read.start;
-	}
-	if (ret < 0)
-		return (cl_log(CL_LOG_ERROR, "send", client));
-	if (ret == 0)
-		return (cl_log(CL_LOG_INFO, "Connection closed by foreign host", client));
-	else if (ret != bytes_send)
-		cl_log(CL_LOG_WARNING, "sent less bytes than expected", client);
-	client->read.len += bytes_send;
+		write_b = client->write.tail - client->write.head;
+	ret = wprintw(client->windows.chatwin, "%.*s", write_b, client->write.head);
+	if (ret == ERR)
+		cl_log(CL_LOG_ERROR, "write", client);
+	ft_move_head(ret, &client->write);
 }

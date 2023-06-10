@@ -6,59 +6,75 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:37:59 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/03/12 14:43:44 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:11:21 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include <termios.h>
 #include <signal.h>
 #include <unistd.h>
-#include "ft_dprintf.h"
 #include "cl_main.h"
 
 t_client	g_client;
 
-static void		cl_init(void)
+static void		cl_init_pairs(void)
 {
-	struct termios	tattr;
-
-	ft_memset(&g_client, 0, sizeof(g_client));
-	g_client.stop = false;
-	ft_init_ringbuf(&g_client.read, g_client.rd, BUFF);
-	ft_init_ringbuf(&g_client.write, g_client.wr, BUFF);
-	if (!isatty(STDIN_FILENO))
-	{
-		ft_dprintf(STDERR_FILENO, "** \e[31mERROR\e[0m :Not in a terminal\n");
-		exit(EXIT_FAILURE);
-	}
-	tcgetattr(STDIN_FILENO, &g_client.tattr);
-	tcgetattr(STDIN_FILENO, &tattr);
-	tattr.c_lflag &= ~(ICANON | ECHO | ISIG);
-	tattr.c_cc[VMIN] = 1;
-	tattr.c_cc[VTIME] = 0;
-	tcsetattr(STDIN_FILENO, TCSANOW, &tattr);
-	signal(SIGINT, SIG_IGN);
+	init_pair(CLIENT_TITLE_COLOR, COLOR_YELLOW, -1);
+	init_pair(CL_PURPLE, COLOR_MAGENTA, -1);
+	init_pair(CL_WHITE, COLOR_WHITE, -1);
+	init_pair(CL_YELLOW, COLOR_YELLOW, -1);
+	init_pair(CL_RED, COLOR_RED, -1);
+	init_pair(CL_LIGHT_BLUE, COLOR_CYAN, -1);
+	init_pair(CL_WEIRD, COLOR_WHITE, COLOR_RED);
 }
 
-int				main(int ac, char **av)
+static int		cl_init(void)
 {
-	char		*port;
+	g_client.stop = false;
+	ft_init_ringbuf(&g_client.read);
+	ft_init_ringbuf(&g_client.write);
+	g_client.windows.ptr = g_client.read.tail;
+	if ((g_client.windows.main = initscr()) == NULL)
+		return (1);
+	raw();
+	noecho();
+	start_color();
+	use_default_colors();
+	clear();
+	cl_init_pairs();
+	return (create_ncurses_chat(&g_client) || create_ncurses_text(&g_client));
+}
 
-	(void)ac;
-	port = DEF_PORT;
-	ft_putendl("*****************************");
-	ft_putendl("* Welcome to GBO-IRC client *");
-	ft_putendl("*****************************");
-	cl_init();
-	if (!av[1])
-		ft_putendl("\e[34mUsage: ./client [host_name[:port]] [port]\e[0m");
-	else if (av[2])
-		port = av[2];
-	else if ((port = ft_strrchr(av[1], ':')) != NULL)
-		*port++ = '\0';
-	if (av[1])
-		cl_getaddrinfo(av[1], port, &g_client);
-	cl_loop(&g_client);
-	cl_quit(NULL, &g_client);
+static void		cl_end(void)
+{
+	if (g_client.windows.chatbox)
+		delwin(g_client.windows.chatbox);
+	if (g_client.windows.chatwin)
+		delwin(g_client.windows.chatwin);
+	if (g_client.windows.textbox)
+		delwin(g_client.windows.textbox);
+	if (g_client.windows.textwin)
+		delwin(g_client.windows.textwin);
+	if (g_client.windows.main)
+		endwin();
+	if (g_client.sock > 0)
+		close(g_client.sock);
+	ft_strdel(&g_client.pass);
+	ft_free(&g_client.user);
+}
+
+// Usage: ./client [host_name[:port]] [port]
+int				main(__attribute__((unused)) int ac, char **av)
+{
+	ft_memset(&g_client, 0, sizeof(g_client));
+	if (cl_init() == 0)
+	{
+		if (av[1])
+			cl_getaddrinfo(av, &g_client);
+		cl_loop(&g_client);
+	}
+	else
+		ft_putendl_fd("\e[31mError initialising client\e[0m", STDERR_FILENO);
+	cl_end();
 	return (0);
 }

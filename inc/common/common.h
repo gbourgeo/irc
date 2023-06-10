@@ -6,19 +6,20 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/06/14 11:25:20 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/03/12 15:46:01 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 13:56:15 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #ifndef COMMON_H
 # define COMMON_H
 
+# include <sys/types.h>
 # include "libft.h"
 
 /*
 ** The size of this server / client Ringbuffer on read and write.
 */
-# define BUFF		512
+# define BUFF		256
 
 /*
 ** The maximum lenght a nickname can be.
@@ -48,6 +49,7 @@
 
 typedef struct	s_buf
 {
+	char	buffer[BUFF];
 	char	*start;
 	char	*end;
 	char	*head;
@@ -62,6 +64,10 @@ int			ft_strisalnum(char *str);
 int			sv_strcmp(const char *s1, const char *s2);
 int			sv_strncmp(const char *s1, const char *s2, size_t n);
 char		**sv_strsplit(char *str, char c);
-void		ft_init_ringbuf(t_buf *buffer, char *buff, int len);
+void		ft_init_ringbuf(t_buf *buffer);
+void		ft_move_head(ssize_t len, t_buf *buf);
+void		ft_move_tail(ssize_t len, t_buf *buf);
+void		ft_move_tail_forward(ssize_t len, t_buf *buf, char **ptr);
+void		ft_move_tail_backward(ssize_t len, t_buf *buf, char **ptr);
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/06 05:18:09 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/03 20:54:49 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/03 14:32:45 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -90,24 +90,39 @@ static void		sv_cmd_client(t_server *server, t_client *client)
 	ft_free(&cmds);
 }
 
-void			sv_cl_read(t_server *e, t_client *cl)
+void			sv_cl_read(t_server *server, t_client *client)
 {
-	int		ret;
+	int	ret;
+	int	len;
 
-	ret = recv(cl->socket.fd, cl->rd.tail, cl->rd.len, 0);
+	len = client->rd.end - client->rd.tail;
+	ret = recv(client->socket.fd, client->rd.tail, len, MSG_DONTWAIT | MSG_NOSIGNAL);
 	if (ret <= 0)
-		return (sv_cl_quit(cl));
+		return (sv_cl_quit(client));
+	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %.*s", client->uid, ret, client->rd.tail);
 	while (ret--)
 	{
-		if (*cl->rd.tail == '\n')
+		if (*client->rd.tail == '\n')
 		{
-			sv_cmd_client(e, cl);
-			if ((cl->rd.head = cl->rd.tail + 1) == cl->rd.end)
-				cl->rd.head = cl->rd.start;
+			char buf[BUFF + 1];
+			if (client->rd.tail > client->rd.head)
+			{
+				ft_strncpy(buf, client->rd.head, client->rd.tail - client->rd.head);
+				buf[client->rd.tail - client->rd.head] = 0;
+			}
+			else
+			{
+				ft_strncpy(buf, client->rd.head, client->rd.end - client->rd.head);
+				buf[client->rd.end - client->rd.head] = 0;
+				ft_strncat(buf, client->rd.start, client->rd.tail - client->rd.start);
+				buf[(client->rd.end - client->rd.head) + (client->rd.tail - client->rd.start)] = 0;
+			}
+			sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %s", client->uid, buf);
+			sv_cmd_client(server, client);
+			if ((client->rd.head = client->rd.tail + 1) >= client->rd.end)
+				client->rd.head = client->rd.start;
 		}
-		if (++cl->rd.tail == cl->rd.end)
-			cl->rd.tail = cl->rd.start;
-		if (--cl->rd.len == 0)
-			cl->rd.len = BUFF;
+		ft_move_tail(1, &client->rd);
 	}
+	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %p %p", client->uid, client->rd.head, client->rd.tail);
 }
