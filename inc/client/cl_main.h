@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:46:47 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 15:10:13 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/12 16:19:57 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,14 +28,18 @@
 
 typedef enum	cl_log_e
 {
-	CL_LOG_DEBUG = 0,
-	CL_LOG_INFO = 1,
-	CL_LOG_WARNING = 2,
-	CL_LOG_ERROR = 3,
-	CL_LOG_FATAL = 4,
+	LOG_DEBUG = 0,
+	LOG_INFO = 1,
+	LOG_WARNING = 2,
+	LOG_ERROR = 3,
+	LOG_FATAL = 4,
 }				cl_log_t;
 
-# define cl_log(log_level, error_str, client) cl_log_real(log_level, __FILE__, __LINE__, error_str, client)
+# define	CL_LOG_DEBUG	LOG_DEBUG, __FILE__, __LINE__
+# define	CL_LOG_INFO		LOG_INFO, __FILE__, __LINE__
+# define	CL_LOG_WARNING	LOG_WARNING, __FILE__, __LINE__
+# define	CL_LOG_ERROR	LOG_ERROR, __FILE__, __LINE__
+# define	CL_LOG_FATAL	LOG_FATAL, __FILE__, __LINE__
 
 /*
 ** Ncurses related enum and structure
@@ -62,7 +66,6 @@ typedef struct		s_windows
 } t_windows;
 typedef struct		s_client
 {
-	// struct termios	tattr;				/**< @brief Terminal attributes */
 	t_windows		windows;
 	bool			stop;				/**< @brief Client loop breaker */
 	int				sock;				/**< @brief Server socket */
@@ -89,10 +92,14 @@ int					cl_backspace(__attribute__((unused)) int ret, t_client *client);
 int					cl_key_dc(__attribute__((unused)) int ret, t_client *client);
 int					cl_key_left(__attribute__((unused)) int ret, t_client *client);
 int					cl_key_right(__attribute__((unused)) int ret, t_client *client);
+int					cl_ctrl_key_left(__attribute__((unused)) int ret, t_client *client);
+int					cl_ctrl_key_right(__attribute__((unused)) int ret, t_client *client);
+int					cl_key_end(__attribute__((unused)) int ret, t_client *client);
+int					cl_key_home(__attribute__((unused)) int ret, t_client *client);
 
 const char			*cl_geterror(errnum_list_e errnum, t_client *client, ...);
-void				cl_log_real(cl_log_t log_level, const char *file, const int line,
-								const char *err, t_client *client);
+void				cl_log(cl_log_t log_level, const char *file, const int line,
+						t_client *client, const char *err, ...);
 int					cl_getaddrinfo(char **argv, t_client *client);
 void				cl_loop(t_client *client);
 int					read_client_input(t_client *client);

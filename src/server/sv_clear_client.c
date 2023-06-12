@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/16 21:57:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2022/12/31 13:59:45 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:19:40 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,9 +91,6 @@ t_client			*sv_clear_client(t_client *client, t_server *server)
 	next = client->next;
 	if (client->reason)
 	{
-		// if (server->verbose)
-		// 	printf("%s(%s):%s :%s\n", client->socket.addr, client->socket.host,
-		// 			client->socket.port, client->reason);
 		sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s(%s):%s :%s",
 			client->socket.addr, client->socket.host,
 			client->socket.port, client->reason);

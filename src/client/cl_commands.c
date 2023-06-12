@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/02 03:00:44 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 15:14:42 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/12 14:14:48 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -46,11 +46,11 @@ void			cl_nick(char **cmds, t_client *client)
 	err = cl_nick_check(cmds[1]);
 	if (err == 1)
 	{
-		cl_log(CL_LOG_ERROR, cl_geterror(ERR_NONICKNAMEGIVEN, client, cmds[0]), client);
+		cl_log(CL_LOG_ERROR, client, cl_geterror(ERR_NONICKNAMEGIVEN, client, cmds[0]));
 	}
 	else if (err == 2)
 	{
-		cl_log(CL_LOG_ERROR, cl_geterror(ERR_ERRONEUSNICKNAME, client, cmds[0]), client);
+		cl_log(CL_LOG_ERROR, client, cl_geterror(ERR_ERRONEUSNICKNAME, client, cmds[0]));
 	}
 	else
 		ft_strncpy(client->nick, cmds[1], NICK_LEN);
@@ -86,14 +86,14 @@ void			cl_help(char **cmds, t_client *client)
 void			cl_quit(char **cmds, t_client *client)
 {
 	(void)cmds;
-	cl_log(CL_LOG_FATAL, "client quit", client);
+	cl_log(CL_LOG_FATAL, client, "client quit");
 	client->stop = true;
 }
 
 void			cl_connect(char **cmds, t_client *client)
 {
 	if (!cmds[1])
-		return (cl_log(CL_LOG_ERROR, cl_geterror(ERR_NEEDMOREPARAMS, client, cmds[0]), client));
+		return (cl_log(CL_LOG_ERROR, client, cl_geterror(ERR_NEEDMOREPARAMS, client, cmds[0])));
 	if (cl_getaddrinfo(cmds, client))
 		return ;
 	if (client->pass && sleep(1))

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2016/07/11 04:01:19 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/01 02:00:36 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:20:26 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,7 +47,6 @@ void			sv_err(errnum_list_e errnum, t_client *client, ...)
 				client->inf->nick);
 			pos = ft_strlen(errstr);
 			va_start(ap, client);
-			// va_start(ap, err->errstr);
 			ft_vsnprintf(errstr + pos, sizeof(errstr) - pos, err->errstr, ap);
 			va_end(ap);
 			ft_strncat(errstr, "\r\n", sizeof(errstr) - 3);

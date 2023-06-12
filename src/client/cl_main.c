@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:37:59 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 15:11:21 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/10 15:21:36 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,9 @@ static void		cl_end(void)
 	ft_free(&g_client.user);
 }
 
-// Usage: ./client [host_name[:port]] [port]
+/**
+ * Usage: ./client [host_name[:port]] [port]
+ */
 int				main(__attribute__((unused)) int ac, char **av)
 {
 	ft_memset(&g_client, 0, sizeof(g_client));
