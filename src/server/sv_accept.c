@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/21 17:16:50 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/03 18:29:01 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/12 21:30:45 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -63,7 +63,7 @@ static int		sv_accept_failed(char *str, t_socket *socket)
 {
 	char		buf[248];
 
-	ft_strcpy(buf, "ERROR :Closing Link: ");
+	ft_strcpy(buf, "Closing Link: ");
 	ft_strcat(buf, socket->addr);
 	ft_strcat(buf, "@");
 	ft_strcat(buf, socket->host);
@@ -71,10 +71,10 @@ static int		sv_accept_failed(char *str, t_socket *socket)
 	ft_strcat(buf, socket->port);
 	ft_strcat(buf, " ");
 	ft_strcat(buf, str);
+	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s", str);
 	ft_strcat(buf, END_CHECK);
 	send(socket->fd, buf, ft_strlen(buf), MSG_DONTWAIT | MSG_NOSIGNAL);
 	close(socket->fd);
-	sv_log(LOG_LEVEL_INFO, LOG_TYPE_SERVER, "%s", str);
 	return (0);
 }
 

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/13 08:45:52 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/01/01 22:31:06 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/13 13:23:19 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -30,7 +30,7 @@ static int		sv_init_fds(t_server *server)
 	{
 		if (cl->type == FD_CLIENT)
 		{
-			if (cl->fct_write && cl->wr.len > 0)
+			if (cl->fct_write && (cl->wr.len > 0 || cl->queue != NULL))
 				FD_SET(cl->socket.fd, &server->fd_write);
 			else if (cl->fct_read && !cl->leaved)
 				FD_SET(cl->socket.fd, &server->fd_read);

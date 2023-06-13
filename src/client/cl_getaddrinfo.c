@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/13 08:51:24 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 14:27:35 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/12 19:04:04 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,13 +42,11 @@ static int	cl_init_addrinfo(char **argv, struct addrinfo **res, t_client *client
 		port = argv[2];
 	else
 		port = DEF_PORT;
-	wprintw(client->windows.chatwin,
-		"*** Connecting to %s on port %s ... ", addr, port);
+	cl_log(CL_LOG_INFO, client, "Connecting to %s on port %s", addr, port);
 	wrefresh(client->windows.chatwin);
 	if (getaddrinfo(addr, port, &hints, res))
 	{
-		wprintw(client->windows.chatwin,
-			"failed : %s\n", strerror(errno));
+		cl_log(CL_LOG_ERROR, client, "Connection failed");
 		wrefresh(client->windows.chatwin);
 		return (1);
 	}
@@ -74,11 +72,11 @@ int			cl_getaddrinfo(char **argv, t_client *client)
 		client->sock = -1;
 		tmp = tmp->ai_next;
 	}
+	errno = 0;
 	freeaddrinfo(results);
 	if (tmp == NULL)
-		wprintw(client->windows.chatwin, "Server not found\n");
+		cl_log(CL_LOG_ERROR, client, "Server not found");
 	else
-		wprintw(client->windows.chatwin, "OK\n");
-	wrefresh(client->windows.chatwin);
+		cl_log(CL_LOG_INFO, client, "Connected to server");
 	return (tmp == NULL);
 }

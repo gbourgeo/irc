@@ -6,7 +6,7 @@
 #    By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2014/05/12 14:11:41 by gbourgeo          #+#    #+#              #
-#    Updated: 2023/06/10 14:10:37 by gbourgeo         ###   ########.fr        #
+#    Updated: 2023/06/13 12:30:19 by gbourgeo         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -85,16 +85,16 @@ SV_SRC	= is_chan_member.c		\
 COM_HDR = inc/common/
 COM_H 	= common.h err_list.h help.h commands.h flags.h
 COM_DIR	= src/common/
-COM_SRC	= ft_free.c			\
-		ft_init_ringbuff.c	\
-		ft_move_ringbuff.c	\
-		ft_strisalnum.c		\
-		ft_strtoupper.c		\
-		ft_strtolower.c		\
-		sv_errlist.c		\
-		sv_strcmp.c			\
-		sv_strncmp.c 		\
-		sv_strsplit.c		\
+COM_SRC	= ft_free.c				\
+		ft_init_ringbuff.c		\
+		ft_move_ringbuff.c		\
+		ft_strisalnum.c			\
+		ft_strtoupper.c			\
+		ft_strtolower.c			\
+		sv_errlist.c			\
+		sv_strcmp.c				\
+		sv_strncmp.c 			\
+		sv_strsplit.c			\
 
 OBJ_DIR	= obj/
 OBJ_CL	= $(addprefix $(OBJ_DIR), $(CL_SRC:.c=.o))

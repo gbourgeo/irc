@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:46:47 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/12 16:19:57 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/13 10:48:07 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -74,6 +74,7 @@ typedef struct		s_client
 	char			nick[NICK_LEN + 1];	/**< @brief NICK command save */
 	t_buf			read;				/**< @brief Input ringbuffer. Read from client, write to server */
 	t_buf			write;				/**< @brief Output ringbuffer. Read from server, write to client */
+	bool			sendtoserv;			/**< @brief Boolean sending write buff to server */
 }					t_client;
 
 typedef struct		s_cmd

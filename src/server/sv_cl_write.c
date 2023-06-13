@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/27 18:43:00 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/03 18:25:34 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/13 13:08:23 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,28 +48,19 @@ static void		check_queue(t_client *cl)
  */
 void			sv_cl_send(t_client *client)
 {
-	ssize_t		ret;
+	ssize_t	ret;
+	int		send_b;
 
 	if (client->wr.len <= 0)
 		check_queue(client);
 	if (client->wr.len <= 0)
 		return ;
-	if (client->wr.tail <= client->wr.head)
-		ret = send(client->socket.fd, client->wr.head, client->wr.end - client->wr.head, MSG_DONTWAIT | MSG_NOSIGNAL);
-	else
-		ret = send(client->socket.fd, client->wr.head, client->wr.tail - client->wr.head, MSG_DONTWAIT | MSG_NOSIGNAL);
-	char buf[BUFF + 1];
-	if (client->wr.tail <= client->wr.head)
-	{
-		ft_strncpy(buf, client->wr.head, client->wr.end - client->wr.head);
-		buf[client->wr.end - client->wr.head] = 0;
-	}
-	else
-	{
-		ft_strncpy(buf, client->wr.head, client->wr.tail - client->wr.head);
-		buf[client->wr.tail - client->wr.head] = 0;
-	}
-	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Send: %s", client->uid, buf);
+	send_b = (client->wr.tail <= client->wr.head) ?
+		client->wr.end - client->wr.head :
+		client->wr.tail - client->wr.head;
+	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Sending %ldo", client->uid, send_b);
+	ret = send(client->socket.fd, client->wr.head, send_b, MSG_DONTWAIT | MSG_NOSIGNAL);
+	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Sent %ldo\n%.*s", client->uid, ret, ret, client->wr.head);
 	ft_move_head(ret, &client->wr);
 	// Cas d'erreur ??
 }

@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/05/12 18:37:59 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 15:21:36 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/13 10:48:37 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,7 @@ static int		cl_init(void)
 	g_client.stop = false;
 	ft_init_ringbuf(&g_client.read);
 	ft_init_ringbuf(&g_client.write);
+	g_client.sendtoserv = false;
 	g_client.windows.ptr = g_client.read.tail;
 	if ((g_client.windows.main = initscr()) == NULL)
 		return (1);

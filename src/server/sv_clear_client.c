@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2017/03/16 21:57:29 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/10 15:19:40 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/12 21:31:13 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,7 +65,7 @@ static void		sv_free_client(t_client *client, t_server *server)
 
 static void		sv_send_reason(t_client *client)
 {
-	sv_cl_write("ERROR :Closing Link: ", client);
+	sv_cl_write("Closing Link: ", client);
 	sv_cl_write(client->inf->nick, client);
 	sv_cl_write("[~", client);
 	sv_cl_write(client->inf->username, client);

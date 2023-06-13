@@ -6,7 +6,7 @@
 /*   By: gbourgeo <gbourgeo@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2014/06/06 05:18:09 by gbourgeo          #+#    #+#             */
-/*   Updated: 2023/06/03 14:32:45 by gbourgeo         ###   ########.fr       */
+/*   Updated: 2023/06/13 13:09:07 by gbourgeo         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -99,7 +99,6 @@ void			sv_cl_read(t_server *server, t_client *client)
 	ret = recv(client->socket.fd, client->rd.tail, len, MSG_DONTWAIT | MSG_NOSIGNAL);
 	if (ret <= 0)
 		return (sv_cl_quit(client));
-	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %.*s", client->uid, ret, client->rd.tail);
 	while (ret--)
 	{
 		if (*client->rd.tail == '\n')
@@ -117,12 +116,11 @@ void			sv_cl_read(t_server *server, t_client *client)
 				ft_strncat(buf, client->rd.start, client->rd.tail - client->rd.start);
 				buf[(client->rd.end - client->rd.head) + (client->rd.tail - client->rd.start)] = 0;
 			}
-			sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %s", client->uid, buf);
+			sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] %s", client->uid, buf);
 			sv_cmd_client(server, client);
 			if ((client->rd.head = client->rd.tail + 1) >= client->rd.end)
 				client->rd.head = client->rd.start;
 		}
 		ft_move_tail(1, &client->rd);
 	}
-	sv_log(LOG_LEVEL_DEBUG, LOG_TYPE_CLIENT, "[%s] Read: %p %p", client->uid, client->rd.head, client->rd.tail);
 }
